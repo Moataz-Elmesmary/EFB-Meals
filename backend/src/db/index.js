@@ -78,6 +78,18 @@ function kitchenRequests() {
 
 const setStatus = (id, status) => db('meal_requests').where({ id }).update({ status });
 
+// requests for a single employee (their own), newest first, with latest budget
+function requestsByEmail(email) {
+  const latest = db('budget_requests').select('meal_request_id').max('id as bid').groupBy('meal_request_id').as('lb');
+  return db('meal_requests as mr')
+    .leftJoin('meals as m', 'm.id', 'mr.meal_id')
+    .leftJoin(latest, 'lb.meal_request_id', 'mr.id')
+    .leftJoin('budget_requests as b', 'b.id', 'lb.bid')
+    .whereRaw('LOWER(mr.requester_email) = ?', [String(email || '').toLowerCase()])
+    .orderBy('mr.created_at', 'desc')
+    .select('mr.*', 'm.name_en', 'm.name_ar', 'm.emoji', 'b.amount', 'b.currency', 'b.attachment_path');
+}
+
 // ── budgets ────────────────────────────────────────────
 async function createBudget(data) {
   const [row] = await db('budget_requests').insert(data).returning('id');
@@ -85,6 +97,7 @@ async function createBudget(data) {
 }
 const latestBudgetFor = (mealRequestId) =>
   db('budget_requests').where({ meal_request_id: mealRequestId }).orderBy('id', 'desc').first();
+const getBudget = (id) => db('budget_requests').where({ id }).first();
 
 // ── sales orders ───────────────────────────────────────
 async function createSalesOrder(data) {
@@ -102,9 +115,11 @@ module.exports = {
   createMealRequest,
   getRequest,
   kitchenRequests,
+  requestsByEmail,
   setStatus,
   createBudget,
   latestBudgetFor,
+  getBudget,
   createSalesOrder,
   updateSalesOrder,
   listSalesOrders

@@ -106,4 +106,23 @@ function readyTemplate(req) {
   return shell('طلبك جاهز · Your Request is Ready', body);
 }
 
-module.exports = { newRequestTemplate, budgetCreatedTemplate, readyTemplate };
+// Confirmation → sent to the requester right after they submit.
+function requestConfirmationTemplate(req, cost) {
+  const money = (v) => (v == null ? '—' : `${Number(v).toLocaleString()} EGP`);
+  const rows = [
+    detailRow('رقم الطلب', 'Request #', `#${req.id}`),
+    detailRow('الوجبة', 'Meal', mealLabel(req)),
+    detailRow('عدد الأفراد', 'People', req.people),
+    detailRow('سعر الوحدة', 'Unit price', req.is_special ? '—' : money(cost && cost.unitPrice)),
+    detailRow('الإجمالي المبدئي', 'Estimated total', req.is_special ? '—' : money(cost && cost.lineTotal)),
+    detailRow('التاريخ المطلوب', 'Needed on', req.needed_date),
+    detailRow('طلب خاص', 'Special request', req.special_request)
+  ];
+  const body = `
+    <p style="margin:0 0 14px;color:${BRAND.ink3};font-size:14px;">استلمنا طلبك ووصل للمطبخ. هنبعتلك تحديث بالميزانية وأول ما يجهز.<br/>We received your request and sent it to the kitchen. You'll get budget & ready updates.</p>
+    ${pill('تم الاستلام · Received', BRAND.emerald)}
+    ${detailsTable(rows)}`;
+  return shell('تأكيد طلبك · Order Confirmation', body);
+}
+
+module.exports = { newRequestTemplate, budgetCreatedTemplate, readyTemplate, requestConfirmationTemplate };

@@ -61,11 +61,25 @@ async function migrate() {
       t.string('currency', 8).defaultTo('EGP');
       t.string('vendor', 200);
       t.string('notes', 1000);
-      t.string('attachment_path', 500);
+      t.string('attachment_path', 500); // on-disk copy
+      t.string('attachment_name', 300);
+      t.string('attachment_mime', 120);
+      t.text('attachment_data'); // base64 copy in the DB (source of truth)
       t.string('created_by', 200);
       t.timestamp('created_at').defaultTo(db.fn.now());
     });
     console.log('✓ created table: budget_requests');
+  } else {
+    for (const [col, def] of [
+      ['attachment_name', (t) => t.string('attachment_name', 300)],
+      ['attachment_mime', (t) => t.string('attachment_mime', 120)],
+      ['attachment_data', (t) => t.text('attachment_data')]
+    ]) {
+      if (!(await db.schema.hasColumn('budget_requests', col))) {
+        await db.schema.alterTable('budget_requests', def);
+        console.log(`✓ added column: budget_requests.${col}`);
+      }
+    }
   }
 
   // Local mirror of what we push to SAP. The real SAP Sales Order lives in the

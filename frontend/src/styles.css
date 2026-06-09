@@ -289,6 +289,15 @@ table.report tr:hover td { background: var(--paper-2); }
 .badge-ready_for_sap { background: var(--emerald-100); color: var(--emerald); }
 .badge-special { background: #ece9ff; color: #5b46c9; }
 
+/* status timeline (my requests) */
+.timeline { display: flex; align-items: center; gap: 6px; margin-top: 16px; }
+.tl-step { display: flex; align-items: center; gap: 8px; flex: 1; color: var(--ink-4); font-size: .8rem; font-weight: 700; }
+.tl-step:not(:last-child)::after { content: ""; flex: 1; height: 2px; background: var(--border); margin: 0 4px; }
+.tl-step.done { color: var(--emerald); }
+.tl-step.done:not(:last-child)::after { background: var(--emerald); }
+.tl-dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--paper-3); color: var(--ink-4); font-weight: 800; font-size: .8rem; flex-shrink: 0; }
+.tl-step.done .tl-dot { background: var(--emerald); color: #fff; }
+
 /* request detail special box */
 .special-box { background: var(--paper-3); border-radius: var(--radius); padding: 12px 14px; margin-top: 12px; color: var(--ink-2); font-size: .9rem; border-inline-start: 4px solid var(--orange); }
 

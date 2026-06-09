@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { GRAPH_ENABLED, graphGetUser } = require('../graph');
+const dao = require('../db');
 
 const clientId = process.env.AZURE_CLIENT_ID;
 const tenantId = process.env.AZURE_TENANT_ID;
@@ -34,16 +35,27 @@ async function enrich(email, fallbackName) {
 
 if (azureEnabled) {
   const auth = require('../auth');
+  const emailOf = (req) => {
+    const u = req.user || {};
+    return u.preferred_username || u.email || u.upn || null;
+  };
   router.get('/me', auth, async (req, res) => {
     const u = req.user || {};
-    const email = u.preferred_username || u.email || u.upn || null;
-    res.json(await enrich(email, u.name));
+    res.json(await enrich(emailOf(req), u.name));
+  });
+  router.get('/my-requests', auth, async (req, res) => {
+    res.json(await dao.requestsByEmail(emailOf(req)));
   });
 } else {
   router.get('/me', async (req, res) => {
     const email = req.header('X-Demo-Email');
     if (!email) return res.status(401).json({ error: 'Not signed in' });
     res.json({ ...(await enrich(email)), demo: true });
+  });
+  router.get('/my-requests', async (req, res) => {
+    const email = req.header('X-Demo-Email');
+    if (!email) return res.status(401).json({ error: 'Not signed in' });
+    res.json(await dao.requestsByEmail(email));
   });
 }
 

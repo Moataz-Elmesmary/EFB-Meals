@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import RequestForm from './RequestForm';
 import KitchenDashboard from './components/KitchenDashboard';
 import ReportsPage from './components/ReportsPage';
+import MyRequests from './components/MyRequests';
 import LoginGate from './components/LoginGate';
 import BootSplash from './components/BootSplash';
 import AuroraBackground from './components/AuroraBackground';
@@ -99,6 +100,7 @@ export default function App() {
           <div className="spacer" />
           <nav className="nav-tabs">
             <button className={`nav-tab ${view === 'request' ? 'active' : ''}`} onClick={() => setView('request')}>{t('navRequest')}</button>
+            <button className={`nav-tab ${view === 'mine' ? 'active' : ''}`} onClick={() => setView('mine')}>{t('navMine')}</button>
             <button className={`nav-tab ${view === 'kitchen' ? 'active' : ''}`} onClick={() => setView('kitchen')}>{t('navKitchen')}</button>
             <button className={`nav-tab ${view === 'reports' ? 'active' : ''}`} onClick={() => setView('reports')}>{t('navReports')}</button>
           </nav>
@@ -186,6 +188,8 @@ export default function App() {
 
           <Marquee items={marqueeItems} reverse />
         </>
+      ) : view === 'mine' ? (
+        <MyRequests />
       ) : view === 'kitchen' ? (
         <KitchenDashboard />
       ) : (

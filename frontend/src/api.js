@@ -10,6 +10,9 @@ export const createRequest = (payload) =>
 export const getKitchenRequests = () =>
   axios.get(`${API_BASE}/api/kitchen/requests`).then((r) => r.data);
 
+export const getMyRequests = () =>
+  axios.get(`${API_BASE}/api/my-requests`).then((r) => r.data);
+
 export const createBudget = (requestId, formData) =>
   axios
     .post(`${API_BASE}/api/kitchen/budget/${requestId}`, formData, {

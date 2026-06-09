@@ -16,6 +16,19 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
+// Download a budget attachment straight from the DB copy (source of truth).
+router.get('/budget/:budgetId/file', async (req, res) => {
+  try {
+    const b = await dao.getBudget(parseInt(req.params.budgetId, 10));
+    if (!b || !b.attachment_data) return res.status(404).send('Not found');
+    res.setHeader('Content-Type', b.attachment_mime || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${b.attachment_name || 'budget'}"`);
+    res.send(Buffer.from(b.attachment_data, 'base64'));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Kitchen queue — each request with its latest budget (if any)
 router.get('/requests', async (req, res) => {
   try {
@@ -37,6 +50,12 @@ router.post('/budget/:requestId', upload.single('attachment'), async (req, res) 
 
   const attachmentPath = `/uploads/${req.file.filename}`;
   try {
+    // Store the file in the DB too (source of truth) in addition to the disk copy.
+    let attachmentData = null;
+    try {
+      attachmentData = fs.readFileSync(req.file.path).toString('base64');
+    } catch (_) {}
+
     const budgetId = await dao.createBudget({
       meal_request_id: requestId,
       amount: parseFloat(amount),
@@ -44,6 +63,9 @@ router.post('/budget/:requestId', upload.single('attachment'), async (req, res) 
       vendor: vendor || '',
       notes: notes || '',
       attachment_path: attachmentPath,
+      attachment_name: req.file.originalname,
+      attachment_mime: req.file.mimetype,
+      attachment_data: attachmentData,
       created_by: created_by || 'kitchen'
     });
     await dao.setStatus(requestId, 'budget_requested');

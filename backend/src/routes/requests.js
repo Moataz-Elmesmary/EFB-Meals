@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const dao = require('../db');
 const email = require('../email');
-const { newRequestTemplate } = require('../templates/emailTemplates');
+const { newRequestTemplate, requestConfirmationTemplate } = require('../templates/emailTemplates');
 
 // Public menu (active meals only)
 router.get('/meals', async (req, res) => {
@@ -28,10 +28,12 @@ router.post('/request', async (req, res) => {
 
   try {
     let mealName = null;
+    let unitPrice = null;
     if (!isSpecial) {
       const meal = await dao.getMeal(meal_id);
       if (!meal) return res.status(400).json({ error: 'Selected meal does not exist.' });
       mealName = `${meal.name_en} / ${meal.name_ar}`;
+      unitPrice = meal.price || 0;
     }
 
     const id = await dao.createMealRequest({
@@ -51,11 +53,22 @@ router.post('/request', async (req, res) => {
       id, requester_name, requester_email, department, phone, meal_id,
       meal_name: mealName, is_special: isSpecial, special_request, people: headcount, needed_date
     };
+    // notify the kitchen
     email
       .sendNotification(
         process.env.KITCHEN_EMAIL || 'kitchen@efb.eg',
         `🍽️ New Meal Request #${id} — طلب وجبة جديد`,
         newRequestTemplate(reqRow)
+      )
+      .catch(() => {});
+
+    // confirmation to the requester (with cost details)
+    const cost = isSpecial ? null : { unitPrice, lineTotal: (unitPrice || 0) * headcount };
+    email
+      .sendNotification(
+        requester_email,
+        `✅ Order confirmation #${id} — تأكيد طلبك`,
+        requestConfirmationTemplate(reqRow, cost)
       )
       .catch(() => {});
 
