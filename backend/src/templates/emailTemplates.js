@@ -114,6 +114,109 @@ function totalBox(label, value) {
 const money = (v) => (v == null ? '—' : `${Number(v).toLocaleString()} EGP`);
 const mealLabel = (r) => (r.is_special ? 'طلب خاص / Special request' : r.meal_name || `#${r.meal_id}`);
 
+const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+
+function ctaButton(text, url, bg = BRAND.emerald) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;"><tr><td align="center">
+    <a href="${url}" style="display:inline-block;background:${bg};color:#fff;font-size:14px;font-weight:800;text-decoration:none;padding:13px 34px;border-radius:10px;">${text}</a>
+  </td></tr></table>`;
+}
+
+// Two side-by-side approve/reject buttons for in-email decisions.
+function approveRejectButtons(approveUrl, rejectUrl) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;table-layout:fixed;"><tr>
+    <td width="50%" style="padding-inline-end:6px;"><a href="${approveUrl}" style="display:block;background:${BRAND.sapling};color:#fff;font-size:14px;font-weight:800;text-decoration:none;padding:15px;border-radius:10px;text-align:center;">✓ موافقة · Approve</a></td>
+    <td width="50%" style="padding-inline-start:6px;"><a href="${rejectUrl}" style="display:block;background:${BRAND.melon};color:#fff;font-size:14px;font-weight:800;text-decoration:none;padding:15px;border-radius:10px;text-align:center;">✕ رفض · Reject</a></td>
+  </tr></table>
+  <div style="text-align:center;font-size:11px;color:#9aa8a3;margin-top:10px;">القرار يُنفّذ فوراً · الرابط صالح 72 ساعة</div>`;
+}
+
+// To employee: please upload the budget PDF.
+function budgetUploadRequestTemplate(req) {
+  const rows = [
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['الوجبة', 'Meal', mealLabel(req)],
+    ['عدد الأفراد', 'People', req.people]
+  ];
+  return layout({
+    emoji: '📄',
+    accent: BRAND.gold,
+    chip: 'مطلوب موازنة · Budget needed',
+    chipColor: BRAND.gold,
+    title: 'محتاجين موازنة طلبك',
+    intro: 'برجاء رفع ملف الموازنة (PDF) من الأبليكيشن عشان نكمّل تجهيز طلبك.<br>Please upload the budget PDF from the app to proceed.',
+    content: detailsTable(rows) + ctaButton('⬆️ رفع الموازنة · Upload budget', APP_URL, BRAND.orange)
+  });
+}
+
+// To kitchen: employee uploaded the PDF → approve/reject (in app or email).
+function budgetApprovalRequestTemplate(req, budget, links) {
+  const amount = budget && budget.amount != null ? `${Number(budget.amount).toLocaleString()} ${budget.currency || 'EGP'}` : '—';
+  const rows = [
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['مقدّم الطلب', 'Requester', req.requester_name],
+    ['الإدارة', 'Department', req.department],
+    ['الوجبة', 'Meal', mealLabel(req)],
+    ['عدد الأفراد', 'People', req.people],
+    ['المورّد', 'Vendor', budget && budget.vendor]
+  ];
+  return layout({
+    emoji: '🧾',
+    accent: BRAND.emerald700,
+    chip: 'مراجعة موازنة · Review budget',
+    chipColor: BRAND.emerald,
+    title: 'موازنة مرفوعة في انتظار اعتمادك',
+    intro: 'الموظف رفع ملف الموازنة (مرفق بالإيميل). راجعه ووافق أو ارفض.<br>The requester uploaded the budget PDF (attached). Approve or reject.',
+    content: detailsTable(rows) + totalBox('الموازنة · Budget', amount) + approveRejectButtons(links.approve, links.reject)
+  });
+}
+
+function budgetApprovedTemplate(req) {
+  const rows = [
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['الوجبة', 'Meal', mealLabel(req)],
+    ['عدد الأفراد', 'People', req.people]
+  ];
+  return layout({
+    emoji: '🎉',
+    accent: BRAND.sapling,
+    chip: 'تم الاعتماد · Approved',
+    chipColor: BRAND.emerald,
+    title: 'تم اعتماد الموازنة',
+    intro: 'اتعمدت الموازنة، والمطبخ بدأ تجهيز طلبك وتسجيله في SAP.<br>Budget approved — the kitchen is preparing your order.',
+    content: detailsTable(rows)
+  });
+}
+
+function budgetRejectedTemplate(req, reason) {
+  const rows = [
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['الوجبة', 'Meal', mealLabel(req)],
+    ['سبب الرفض', 'Reason', reason]
+  ];
+  return layout({
+    emoji: '⚠️',
+    accent: BRAND.melon,
+    chip: 'مرفوضة · Rejected',
+    chipColor: BRAND.melon,
+    title: 'الموازنة محتاجة تعديل',
+    intro: 'تم رفض الموازنة الحالية. ممكن ترفع موازنة جديدة من الأبليكيشن.<br>The budget was rejected. You can upload a new one from the app.',
+    content: detailsTable(rows) + ctaButton('⬆️ رفع موازنة جديدة · Re-upload', APP_URL, BRAND.orange)
+  });
+}
+
+function kitchenNoteTemplate(req, note) {
+  return layout({
+    emoji: '💬',
+    accent: BRAND.cyan || '#1AC8BF',
+    chip: 'ملاحظة من المطبخ · Kitchen note',
+    chipColor: BRAND.emerald,
+    title: `تحديث على طلبك #${req.id}`,
+    intro: '',
+    content: `<div style="background:${BRAND.paperSoft};border-inline-start:4px solid ${BRAND.orange};border-radius:12px;padding:16px 18px;color:${BRAND.ink};font-size:15px;line-height:1.8;">${note}</div>`
+  });
+}
+
 // 1) New request → kitchen
 function newRequestTemplate(req) {
   const rows = [
@@ -206,4 +309,14 @@ function readyTemplate(req) {
   });
 }
 
-module.exports = { newRequestTemplate, budgetCreatedTemplate, readyTemplate, requestConfirmationTemplate };
+module.exports = {
+  newRequestTemplate,
+  requestConfirmationTemplate,
+  budgetCreatedTemplate,
+  readyTemplate,
+  budgetUploadRequestTemplate,
+  budgetApprovalRequestTemplate,
+  budgetApprovedTemplate,
+  budgetRejectedTemplate,
+  kitchenNoteTemplate
+};

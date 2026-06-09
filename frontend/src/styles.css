@@ -16,6 +16,9 @@
   --gold:           #D1B671;
   --gold-dark:      #a78f4f;
   --gold-light:     #f0e2bf;
+  --cyan:           #1AC8BF;
+  --cyan-dark:      #0ea69e;
+  --cyan-light:     #b8efeb;
   --melon:          #CC4948;
 
   --ink:            #0e1f1c;
@@ -287,8 +290,18 @@ table.report tr:hover td { background: var(--paper-2); }
 .badge-requested { background: var(--orange-light); color: var(--orange-dark); }
 .badge-budget_requested { background: var(--gold-light); color: var(--gold-dark); }
 .badge-ready_for_sap { background: var(--emerald-100); color: var(--emerald); }
+.badge-budget_uploaded { background: var(--cyan-light); color: var(--cyan-dark); }
+.badge-budget_rejected { background: #fdecec; color: var(--melon); }
 .badge-special { background: #ece9ff; color: #5b46c9; }
 .badge-urgent { background: #fdecec; color: var(--melon); }
+.await-note { color: var(--ink-3); font-weight: 700; font-size: .88rem; align-self: center; }
+
+/* employee budget upload (in My Requests) */
+.upload-budget { margin-top: 14px; background: var(--gold-light); border: 1px solid var(--gold); border-radius: var(--radius); padding: 16px; }
+.upload-title { font-weight: 800; color: var(--gold-dark); margin-bottom: 12px; }
+.upload-row { display: grid; grid-template-columns: 1.2fr .6fr 1.2fr; gap: 10px; }
+.upload-budget input, .upload-budget select { min-height: 44px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; background: #fff; }
+@media (max-width: 560px) { .upload-row { grid-template-columns: 1fr; } }
 .urgent-hint { color: var(--melon); font-weight: 800; font-size: .8rem; margin-top: 6px; display: inline-block; }
 
 /* status timeline (my requests) */

@@ -1,20 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const dao = require('../db');
-const email = require('../email');
-const { pushRequestToSAP } = require('../sapService');
-const { budgetCreatedTemplate, readyTemplate } = require('../templates/emailTemplates');
+const budgetFlow = require('../budgetService');
 
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`)
+// Kitchen queue — each request with its latest budget (if any)
+router.get('/requests', async (req, res) => {
+  try {
+    res.json(await dao.kitchenRequests());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Download a budget attachment straight from the DB copy (source of truth).
 router.get('/budget/:budgetId/file', async (req, res) => {
@@ -29,88 +25,42 @@ router.get('/budget/:budgetId/file', async (req, res) => {
   }
 });
 
-// Kitchen queue — each request with its latest budget (if any)
-router.get('/requests', async (req, res) => {
+// Kitchen → ask the requester to upload a budget PDF.
+router.post('/request-budget/:id', async (req, res) => {
   try {
-    res.json(await dao.kitchenRequests());
+    res.json(await budgetFlow.requestBudget(parseInt(req.params.id, 10)));
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(e.message === 'Request not found' ? 404 : 500).json({ error: e.message });
   }
 });
 
-// Create a budget request — amount AND attachment are mandatory.
-router.post('/budget/:requestId', upload.single('attachment'), async (req, res) => {
-  const requestId = parseInt(req.params.requestId, 10);
-  const { amount, currency, vendor, notes, created_by } = req.body;
-
-  if (!req.file) return res.status(400).json({ error: 'Attachment is required for budget requests.' });
-  if (amount == null || amount === '' || isNaN(parseFloat(amount))) {
-    return res.status(400).json({ error: 'A valid budget amount is required.' });
-  }
-
-  const attachmentPath = `/uploads/${req.file.filename}`;
+// Kitchen → approve the uploaded budget (→ SAP).
+router.post('/approve/:id', async (req, res) => {
   try {
-    // Store the file in the DB too (source of truth) in addition to the disk copy.
-    let attachmentData = null;
-    try {
-      attachmentData = fs.readFileSync(req.file.path).toString('base64');
-    } catch (_) {}
-
-    const budgetId = await dao.createBudget({
-      meal_request_id: requestId,
-      amount: parseFloat(amount),
-      currency: currency || 'EGP',
-      vendor: vendor || '',
-      notes: notes || '',
-      attachment_path: attachmentPath,
-      attachment_name: req.file.originalname,
-      attachment_mime: req.file.mimetype,
-      attachment_data: attachmentData,
-      created_by: created_by || 'kitchen'
-    });
-    await dao.setStatus(requestId, 'budget_requested');
-
-    const reqRow = await dao.getRequest(requestId);
-    if (reqRow && reqRow.requester_email) {
-      email
-        .sendNotification(
-          reqRow.requester_email,
-          `💰 Budget ready for request #${requestId} — تم تجهيز الميزانية`,
-          budgetCreatedTemplate(reqRow, { amount: parseFloat(amount), currency: currency || 'EGP', vendor, notes })
-        )
-        .catch(() => {});
-    }
-    res.status(201).json({ budgetId, attachmentPath, amount: parseFloat(amount), status: 'budget_requested' });
+    res.json(await budgetFlow.approve(parseInt(req.params.id, 10)));
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(400).json({ error: e.message });
   }
 });
 
-// Mark ready → push to SAP Sales Order + notify requester.
-router.post('/ready/:requestId', async (req, res) => {
-  const requestId = parseInt(req.params.requestId, 10);
+// Kitchen → reject the budget with a reason.
+router.post('/reject/:id', async (req, res) => {
+  const reason = (req.body && req.body.reason) || '';
+  if (!reason.trim()) return res.status(400).json({ error: 'A rejection reason is required.' });
   try {
-    const reqRow = await dao.getRequest(requestId);
-    if (!reqRow) return res.status(404).json({ error: 'Request not found' });
-
-    const budget = await dao.latestBudgetFor(requestId);
-    if (!budget) return res.status(400).json({ error: 'A budget must be created before marking ready.' });
-
-    const result = await pushRequestToSAP(requestId);
-    await dao.setStatus(requestId, 'ready_for_sap');
-
-    if (reqRow.requester_email) {
-      email
-        .sendNotification(
-          reqRow.requester_email,
-          `✅ Request #${requestId} is ready — طلبك جاهز`,
-          readyTemplate(reqRow)
-        )
-        .catch(() => {});
-    }
-    res.json({ ok: true, status: 'ready_for_sap', ...result });
+    res.json(await budgetFlow.reject(parseInt(req.params.id, 10), reason));
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// Kitchen → add a note (delay / problem / info).
+router.post('/note/:id', async (req, res) => {
+  const note = (req.body && req.body.note) || '';
+  try {
+    res.json(await budgetFlow.addNote(parseInt(req.params.id, 10), note));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 

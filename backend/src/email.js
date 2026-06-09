@@ -18,17 +18,23 @@ const smtpTransporter = process.env.SMTP_HOST
   : null;
 
 // Routing order: Microsoft Graph (preferred) → SMTP → simulate/log.
-async function sendNotification(to, subject, html) {
+// attachments: [{ name, contentType, content (Buffer|base64) }]
+async function sendNotification(to, subject, html, attachments) {
   const finalTo = REDIRECT || to;
   const finalSubject = REDIRECT ? `[TEST → ${to}] ${subject}` : subject;
 
   if (GRAPH_ENABLED) {
-    return graphSendMail(MAIL_FROM, finalTo, finalSubject, html);
+    return graphSendMail(MAIL_FROM, finalTo, finalSubject, html, attachments);
   }
   if (smtpTransporter) {
-    return smtpTransporter.sendMail({ from: MAIL_FROM, to: finalTo, subject: finalSubject, html });
+    const att = (attachments || []).map((a) => ({
+      filename: a.name,
+      content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content, 'base64'),
+      contentType: a.contentType
+    }));
+    return smtpTransporter.sendMail({ from: MAIL_FROM, to: finalTo, subject: finalSubject, html, attachments: att });
   }
-  console.log(`[MAIL:simulated] from ${MAIL_FROM} → ${finalTo} | ${finalSubject}`);
+  console.log(`[MAIL:simulated] from ${MAIL_FROM} → ${finalTo} | ${finalSubject}${attachments && attachments.length ? ` (+${attachments.length} attachment)` : ''}`);
   return Promise.resolve({ simulated: true });
 }
 

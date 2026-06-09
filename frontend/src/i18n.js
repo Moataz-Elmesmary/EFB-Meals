@@ -131,8 +131,24 @@ const resources = {
 
       // statuses
       status_requested: 'New',
-      status_budget_requested: 'Budgeted',
+      status_budget_requested: 'Budget needed',
+      status_budget_uploaded: 'Budget · review',
+      status_budget_rejected: 'Budget rejected',
       status_ready_for_sap: 'Ready · SAP',
+      requestBudget: 'Request budget',
+      awaitingUpload: 'Awaiting budget upload',
+      viewBudget: 'View budget',
+      approve: 'Approve',
+      reject: 'Reject',
+      addNote: 'Add note',
+      rejectPrompt: 'Reason for rejection:',
+      notePrompt: 'Note to the requester:',
+      kpiAwaiting: 'Awaiting budget',
+      kpiToReview: 'To review',
+      uploadBudgetTitle: 'Upload the budget (PDF) for this order',
+      sendBudget: 'Send budget',
+      kitchenSays: 'Kitchen',
+      rejectedReason: 'Rejected',
 
       footer: 'EFB Meals · Designed for a fast, bilingual kitchen workflow.'
     }
@@ -260,8 +276,24 @@ const resources = {
       amountRequired: 'برجاء إدخال مبلغ صحيح.',
 
       status_requested: 'جديد',
-      status_budget_requested: 'تم تسعيره',
+      status_budget_requested: 'مطلوب موازنة',
+      status_budget_uploaded: 'موازنة · للمراجعة',
+      status_budget_rejected: 'الموازنة مرفوضة',
       status_ready_for_sap: 'جاهز · SAP',
+      requestBudget: 'طلب موازنة',
+      awaitingUpload: 'بانتظار رفع الموازنة',
+      viewBudget: 'عرض الموازنة',
+      approve: 'موافقة',
+      reject: 'رفض',
+      addNote: 'إضافة ملاحظة',
+      rejectPrompt: 'سبب الرفض:',
+      notePrompt: 'ملاحظة لمقدّم الطلب:',
+      kpiAwaiting: 'بانتظار موازنة',
+      kpiToReview: 'للمراجعة',
+      uploadBudgetTitle: 'ارفع موازنة الطلب (PDF)',
+      sendBudget: 'إرسال الموازنة',
+      kitchenSays: 'المطبخ',
+      rejectedReason: 'سبب الرفض',
 
       footer: 'EFB Meals · مصمَّم لسير عمل مطبخ سريع وثنائي اللغة.'
     }

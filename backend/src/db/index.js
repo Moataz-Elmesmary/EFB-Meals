@@ -77,6 +77,7 @@ function kitchenRequests() {
 }
 
 const setStatus = (id, status) => db('meal_requests').where({ id }).update({ status });
+const updateRequest = (id, fields) => db('meal_requests').where({ id }).update(fields);
 
 // requests for a single employee (their own), newest first, with latest budget
 function requestsByEmail(email) {
@@ -117,6 +118,7 @@ module.exports = {
   kitchenRequests,
   requestsByEmail,
   setStatus,
+  updateRequest,
   createBudget,
   latestBudgetFor,
   getBudget,

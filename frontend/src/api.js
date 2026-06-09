@@ -13,15 +13,17 @@ export const getKitchenRequests = () =>
 export const getMyRequests = () =>
   axios.get(`${API_BASE}/api/my-requests`).then((r) => r.data);
 
-export const createBudget = (requestId, formData) =>
-  axios
-    .post(`${API_BASE}/api/kitchen/budget/${requestId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    .then((r) => r.data);
+// Kitchen actions
+export const requestBudget = (id) => axios.post(`${API_BASE}/api/kitchen/request-budget/${id}`).then((r) => r.data);
+export const approveBudget = (id) => axios.post(`${API_BASE}/api/kitchen/approve/${id}`).then((r) => r.data);
+export const rejectBudget = (id, reason) => axios.post(`${API_BASE}/api/kitchen/reject/${id}`, { reason }).then((r) => r.data);
+export const addKitchenNote = (id, note) => axios.post(`${API_BASE}/api/kitchen/note/${id}`, { note }).then((r) => r.data);
 
-export const markReady = (requestId) =>
-  axios.post(`${API_BASE}/api/kitchen/ready/${requestId}`).then((r) => r.data);
+// Requester uploads the budget PDF + amount
+export const uploadBudget = (id, formData) =>
+  axios
+    .post(`${API_BASE}/api/budget/upload/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+    .then((r) => r.data);
 
 export const fileUrl = (path) => (path ? `${API_BASE}${path}` : null);
 

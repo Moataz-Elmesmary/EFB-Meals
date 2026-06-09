@@ -45,17 +45,24 @@ async function getAppToken() {
 }
 
 // Send HTML mail as `from` (the shared mailbox). `to` may be a string or array.
-async function graphSendMail(from, to, subject, html) {
+// attachments: [{ name, contentType, content (Buffer|base64) }]
+async function graphSendMail(from, to, subject, html, attachments) {
   const token = await getAppToken();
   const toRecipients = (Array.isArray(to) ? to : [to])
     .filter(Boolean)
     .map((addr) => ({ emailAddress: { address: addr } }));
   if (!toRecipients.length) throw new Error('No recipients');
 
-  const body = {
-    message: { subject, body: { contentType: 'HTML', content: html }, toRecipients },
-    saveToSentItems: true
-  };
+  const message = { subject, body: { contentType: 'HTML', content: html }, toRecipients };
+  if (attachments && attachments.length) {
+    message.attachments = attachments.map((a) => ({
+      '@odata.type': '#microsoft.graph.fileAttachment',
+      name: a.name,
+      contentType: a.contentType || 'application/octet-stream',
+      contentBytes: Buffer.isBuffer(a.content) ? a.content.toString('base64') : a.content
+    }));
+  }
+  const body = { message, saveToSentItems: true };
 
   const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(from)}/sendMail`, {
     method: 'POST',

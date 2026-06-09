@@ -46,7 +46,10 @@ async function migrate() {
       t.string('needed_time', 10);
       t.boolean('urgent').defaultTo(false);
       t.string('notes', 1000); // order comment from the requester
-      t.string('status', 30).defaultTo('requested').index(); // requested|budget_requested|ready_for_sap
+      t.string('kitchen_notes', 1000); // notes from the kitchen back to the requester
+      t.string('reject_reason', 1000);
+      // requested|budget_requested|budget_uploaded|ready_for_sap|budget_rejected
+      t.string('status', 30).defaultTo('requested').index();
       t.timestamp('created_at').defaultTo(db.fn.now());
     });
     console.log('✓ created table: meal_requests');
@@ -55,13 +58,29 @@ async function migrate() {
       ['phone', (t) => t.string('phone', 40)],
       ['needed_time', (t) => t.string('needed_time', 10)],
       ['urgent', (t) => t.boolean('urgent').defaultTo(false)],
-      ['notes', (t) => t.string('notes', 1000)]
+      ['notes', (t) => t.string('notes', 1000)],
+      ['kitchen_notes', (t) => t.string('kitchen_notes', 1000)],
+      ['reject_reason', (t) => t.string('reject_reason', 1000)]
     ]) {
       if (!(await db.schema.hasColumn('meal_requests', col))) {
         await db.schema.alterTable('meal_requests', def);
         console.log(`✓ added column: meal_requests.${col}`);
       }
     }
+  }
+
+  // Cart line items — one row per meal in an order, with its quantity.
+  if (!(await db.schema.hasTable('order_items'))) {
+    await db.schema.createTable('order_items', (t) => {
+      t.increments('id').primary();
+      t.integer('meal_request_id').index();
+      t.integer('meal_id');
+      t.string('meal_name', 400);
+      t.string('emoji', 16);
+      t.integer('quantity').defaultTo(1);
+      t.decimal('unit_price', 12, 2).defaultTo(0);
+    });
+    console.log('✓ created table: order_items');
   }
 
   if (!(await db.schema.hasTable('budget_requests'))) {
