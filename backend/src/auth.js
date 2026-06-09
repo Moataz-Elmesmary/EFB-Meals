@@ -1,0 +1,28 @@
+const { expressjwt: expressJwt } = require('express-jwt');
+const jwksRsa = require('jwks-rsa');
+
+// If AZURE_CLIENT_ID (Application ID) and AZURE_TENANT_ID are set, enable JWT validation
+const clientId = process.env.AZURE_CLIENT_ID;
+const tenantId = process.env.AZURE_TENANT_ID;
+
+if (!clientId || !tenantId) {
+  module.exports = function optionalAuth(req, res, next){
+    // no auth configured: attach dummy user and continue
+    req.user = { sub: 'anonymous' };
+    next();
+  };
+} else {
+  const issuer = `https://login.microsoftonline.com/${tenantId}/v2.0`;
+  const checkJwt = expressJwt({
+    secret: jwksRsa.expressJwtSecret({
+      cache: true,
+      rateLimit: true,
+      jwksRequestsPerMinute: 5,
+      jwksUri: `${issuer}/discovery/v2.0/keys`
+    }),
+    audience: clientId,
+    issuer: issuer,
+    algorithms: ['RS256']
+  });
+  module.exports = checkJwt;
+}

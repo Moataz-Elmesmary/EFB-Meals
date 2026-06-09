@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kitchen Dashboard</title>
+    <style>
+      body { font-family: system-ui; padding: 20px; }
+      .card { border: 1px solid #ddd; padding: 12px; margin-bottom: 8px; border-radius: 6px; }
+      button { margin-right: 8px }
+    </style>
+  </head>
+  <body>
+    <h1>Kitchen Dashboard</h1>
+    <div id="list">Loading...</div>
+
+    <script>
+      const API = 'http://localhost:3001/admin';
+      async function load(){
+        const res = await fetch(API + '/requests');
+        const rows = await res.json();
+        const el = document.getElementById('list');
+        el.innerHTML = '';
+        rows.forEach(r => {
+          const d = document.createElement('div'); d.className='card';
+          d.innerHTML = `<b>#${r.id}</b> ${r.name_en} / ${r.name_ar} — Qty: ${r.quantity} — Status: ${r.status} <br/>Requester: ${r.requester_name} (${r.requester_email})`;
+          const btnBudget = document.createElement('button'); btnBudget.textContent='Create Budget';
+          btnBudget.onclick = ()=> openBudget(r.id);
+          const btnReady = document.createElement('button'); btnReady.textContent='Mark Ready';
+          btnReady.onclick = ()=> markReady(r.id);
+          const btnPush = document.createElement('button'); btnPush.textContent='Push to SAP';
+          btnPush.onclick = ()=> pushSAP(r.id);
+          d.appendChild(document.createElement('br'));
+          d.appendChild(btnBudget); d.appendChild(btnReady); d.appendChild(btnPush);
+          el.appendChild(d);
+        });
+      }
+      function openBudget(id){
+        const url = `budget.html?req=${id}`;
+        window.open(url, '_blank');
+      }
+      async function markReady(id){
+        await fetch(API + `/requests/${id}/ready`, { method: 'POST' });
+        alert('Marked ready'); load();
+      }
+      async function pushSAP(id){
+        const res = await fetch('http://localhost:3000/api/sap/push/' + id, { method: 'POST' });
+        const j = await res.json();
+        alert('Pushed to SalesOrder id: ' + (j.salesOrderId || 'n/a'));
+        load();
+      }
+      load();
+    </script>
+  </body>
+</html>

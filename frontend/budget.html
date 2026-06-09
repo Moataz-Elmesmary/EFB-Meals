@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Budget</title>
+    <style>body{font-family:system-ui;padding:20px}.field{margin-bottom:8px}</style>
+  </head>
+  <body>
+    <h1>Create Budget</h1>
+    <div id="info"></div>
+    <form id="f">
+      <div class="field"><label>Notes<br/><textarea name="notes" rows="4" cols="40"></textarea></label></div>
+      <div class="field"><label>Attachment<br/><input type="file" name="attachment" /></label></div>
+      <button type="submit">Upload</button>
+    </form>
+
+    <script>
+      const API = 'http://localhost:3001/admin';
+      const params = new URLSearchParams(location.search);
+      const req = params.get('req');
+      document.getElementById('info').textContent = 'Request ID: ' + req;
+      document.getElementById('f').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const res = await fetch('http://localhost:3000/api/kitchen/budget/' + req, { method: 'POST', body: fd });
+        const j = await res.json();
+        alert('Budget created: ' + (j.budgetId || 'n/a'));
+      });
+    </script>
+  </body>
+</html>
