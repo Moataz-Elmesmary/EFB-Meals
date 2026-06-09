@@ -38,7 +38,7 @@ export default function App() {
   const [meals, setMeals] = useState([]);
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
-  const [intro, setIntro] = useState(true); // ~3s appetizing splash
+  const [intro, setIntro] = useState(() => !sessionStorage.getItem('introShown')); // ~3s splash, once per session
   const [view, setView] = useState('request');
 
   const heroRef = useRef(null);
@@ -55,7 +55,10 @@ export default function App() {
     restoreSession()
       .then((u) => setUser(u))
       .finally(() => setBooting(false));
-    const id = setTimeout(() => setIntro(false), 3000);
+    const id = setTimeout(() => {
+      setIntro(false);
+      sessionStorage.setItem('introShown', '1');
+    }, 3000);
     return () => clearTimeout(id);
   }, []);
 
