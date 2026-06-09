@@ -18,10 +18,11 @@ if (!clientId || !tenantId) {
       cache: true,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
-      jwksUri: `${issuer}/discovery/v2.0/keys`
+      // Correct v2.0 JWKS endpoint: /{tenant}/discovery/v2.0/keys (no extra /v2.0)
+      jwksUri: `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`
     }),
     audience: clientId,
-    issuer: issuer,
+    issuer,
     algorithms: ['RS256']
   });
   module.exports = checkJwt;
