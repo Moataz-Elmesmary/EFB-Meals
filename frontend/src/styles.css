@@ -323,7 +323,7 @@ a { color: inherit; }
 .app-shell .page-footer { position: relative; z-index: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora-orb, .dish-ring, .dish-plate, .dish-orbit, .dish-steam path { animation: none !important; }
+  .aurora-orb, .dish-ring, .dish-plate, .dish-chip, .dish-steam path { animation: none !important; }
 }
 
 /* ---------- Boot splash ---------- */
@@ -357,23 +357,30 @@ a { color: inherit; }
 .login-tagline { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 900; margin: 6px 0 0; max-width: 460px; line-height: 1.2; }
 .login-tagline .accent { background: linear-gradient(110deg, #FFB37a, #FF6300 60%, #D1B671); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
-/* central hero dish (real photo) */
-.hero-dish { position: relative; width: 360px; height: 360px; display: grid; place-items: center; }
+/* EFB logo */
+.login-logo { height: 46px; width: auto; margin-bottom: 6px; filter: brightness(0) invert(1) drop-shadow(0 4px 12px rgba(0,0,0,.4)); }
+
+/* interactive 3D dish stage */
+.dish-perspective { perspective: 1100px; width: 380px; height: 380px; display: grid; place-items: center; }
+.dish-tilt { position: relative; width: 300px; height: 300px; transform-style: preserve-3d; display: grid; place-items: center; }
 .dish-ring {
-  position: absolute; width: 320px; height: 320px; border-radius: 50%;
-  background: conic-gradient(from 0deg, rgba(255,99,0,.0), rgba(255,99,0,.55), rgba(26,200,191,.5), rgba(209,182,113,.55), rgba(255,99,0,0));
-  filter: blur(22px); opacity: .9;
+  position: absolute; width: 330px; height: 330px; border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(255,99,0,0), rgba(255,99,0,.6), rgba(26,200,191,.55), rgba(209,182,113,.6), rgba(255,99,0,0));
+  filter: blur(24px); opacity: .95;
 }
-.dish-steam { position: absolute; top: -6%; width: 200px; height: 120px; z-index: 2; }
+.dish-steam { position: absolute; top: -4%; width: 200px; height: 120px; transform: translateZ(40px); }
 .dish-plate {
   position: relative; width: 256px; height: 256px; border-radius: 50%; overflow: hidden;
-  border: 6px solid rgba(255,255,255,.9);
-  box-shadow: 0 30px 70px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.3);
+  border: 7px solid rgba(255,255,255,.92);
+  box-shadow: 0 40px 80px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,255,255,.3);
 }
 .dish-plate img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .dish-fallback { width: 100%; height: 100%; display: grid; place-items: center; font-size: 110px; background: radial-gradient(circle at 35% 30%, #0d8068, #062a23); }
-.dish-orbit { position: absolute; inset: 0; display: grid; place-items: center; }
-.dish-orbit > span { display: inline-block; font-size: 30px; filter: drop-shadow(0 8px 14px rgba(0,0,0,.4)); }
+.dish-chip { position: absolute; font-size: 40px; filter: drop-shadow(0 12px 18px rgba(0,0,0,.45)); }
+.dish-chip.k1 { top: -6%; inset-inline-start: -4%; }
+.dish-chip.k2 { top: 8%; inset-inline-end: -8%; }
+.dish-chip.k3 { bottom: -2%; inset-inline-start: -8%; }
+.dish-chip.k4 { bottom: 4%; inset-inline-end: -2%; }
 
 /* glass cards */
 .glass {
@@ -511,8 +518,10 @@ html.lenis, html.lenis body { height: auto; }
 /* On short/tall phones show a compact dish above the card */
 @media (max-width: 920px) and (min-height: 720px) {
   .login-visual { display: grid; }
-  .hero-dish { width: 260px; height: 260px; }
-  .dish-plate { width: 190px; height: 190px; }
-  .dish-ring { width: 240px; height: 240px; }
-  .dish-orbit > span { font-size: 24px; }
+  .dish-perspective { width: 260px; height: 260px; }
+  .dish-tilt { width: 200px; height: 200px; }
+  .dish-plate { width: 180px; height: 180px; }
+  .dish-ring { width: 230px; height: 230px; }
+  .dish-chip { font-size: 30px; }
+  .login-logo { height: 38px; }
 }

@@ -1,71 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import AuroraBackground from './AuroraBackground';
 import { loadConfig, loginMicrosoft, loginDemo } from '../auth';
 
-// A real plated-dish photo in a circular frame, floating over a rotating glow
-// ring with rising steam and orbiting ingredients. Falls back to a gradient +
-// emoji if the image can't load (offline / blocked network).
 const DISH_IMG =
-  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=520&h=520&q=80';
+  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=560&h=560&q=80';
 
-function HeroDish() {
-  const [imgOk, setImgOk] = useState(true);
-  return (
-    <motion.div
-      className="hero-dish"
-      initial={{ opacity: 0, scale: 0.78, y: 24 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ ease: [0.34, 1.56, 0.64, 1], duration: 1 }}
-    >
-      <motion.span
-        className="dish-ring"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
-      />
-      {/* steam */}
-      <svg className="dish-steam" viewBox="0 0 200 120" aria-hidden="true">
-        {[60, 100, 140].map((x, i) => (
-          <motion.path
-            key={x}
-            d={`M${x} 110 q -12 -22 0 -44 q 12 -22 0 -44`}
-            fill="none"
-            stroke="rgba(255,255,255,.7)"
-            strokeWidth="5"
-            strokeLinecap="round"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.7, 0], y: [10, -34] }}
-            transition={{ duration: 3, repeat: Infinity, delay: i * 0.6, ease: 'easeOut' }}
-          />
-        ))}
-      </svg>
-
-      <motion.div
-        className="dish-plate"
-        animate={{ y: [0, -14, 0] }}
-        transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        {imgOk ? (
-          <img src={DISH_IMG} alt="" onError={() => setImgOk(false)} draggable="false" />
-        ) : (
-          <div className="dish-fallback">🍲</div>
-        )}
-      </motion.div>
-
-      {['🍅', '🌿', '🍋', '🌶️'].map((e, i) => (
-        <motion.span
-          key={e}
-          className="dish-orbit"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 18 + i * 5, repeat: Infinity, ease: 'linear' }}
-        >
-          <span style={{ transform: `rotate(${i * 90}deg) translateX(168px)` }}>{e}</span>
-        </motion.span>
-      ))}
-    </motion.div>
-  );
-}
+const spring = { stiffness: 120, damping: 16, mass: 0.6 };
 
 export default function LoginGate({ onLogin }) {
   const { t, i18n } = useTranslation();
@@ -74,12 +16,29 @@ export default function LoginGate({ onLogin }) {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [imgOk, setImgOk] = useState(true);
+
+  // mouse parallax (normalized -0.5..0.5)
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const rotX = useSpring(useTransform(my, [-0.5, 0.5], [14, -14]), spring);
+  const rotY = useSpring(useTransform(mx, [-0.5, 0.5], [-18, 18]), spring);
+  const gx = useSpring(useTransform(mx, [-0.5, 0.5], [-22, 22]), spring);
+  const gy = useSpring(useTransform(my, [-0.5, 0.5], [-18, 18]), spring);
 
   useEffect(() => {
-    loadConfig()
-      .then((c) => setAzure(c.azureEnabled))
-      .catch(() => setAzure(false));
+    loadConfig().then((c) => setAzure(c.azureEnabled)).catch(() => setAzure(false));
   }, []);
+
+  const onMove = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    mx.set((e.clientX - r.left) / r.width - 0.5);
+    my.set((e.clientY - r.top) / r.height - 0.5);
+  };
+  const onLeave = () => {
+    mx.set(0);
+    my.set(0);
+  };
 
   const doMicrosoft = async () => {
     setErr(null);
@@ -91,7 +50,6 @@ export default function LoginGate({ onLogin }) {
       setBusy(false);
     }
   };
-
   const doDemo = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -105,8 +63,15 @@ export default function LoginGate({ onLogin }) {
     }
   };
 
+  const chips = [
+    { e: '🍕', cls: 'k1', z: 90 },
+    { e: '🍮', cls: 'k2', z: 130 },
+    { e: '🥗', cls: 'k3', z: 70 },
+    { e: '🌶️', cls: 'k4', z: 110 }
+  ];
+
   return (
-    <div className="login-gate" dir={ar ? 'rtl' : 'ltr'}>
+    <div className="login-gate" dir={ar ? 'rtl' : 'ltr'} onMouseMove={onMove} onMouseLeave={onLeave}>
       <AuroraBackground variant="night" />
 
       <button className="login-lang" onClick={() => i18n.changeLanguage(ar ? 'en' : 'ar')}>
@@ -114,33 +79,96 @@ export default function LoginGate({ onLogin }) {
       </button>
 
       <div className="login-split">
-        {/* Visual stage */}
+        {/* ---- Cinematic visual stage ---- */}
         <div className="login-visual">
-          <motion.div
-            className="login-eyebrow"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            {t('eyebrow')}
-          </motion.div>
-          <HeroDish />
+          <motion.img
+            src="/LOGO.png"
+            alt="Egyptian Food Bank"
+            className="login-logo"
+            initial={{ opacity: 0, y: -24, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          />
+
+          <div className="dish-perspective">
+            <motion.div className="dish-tilt" style={{ rotateX: rotX, rotateY: rotY }}>
+              {/* rotating glow ring (sits behind, depth) */}
+              <motion.span
+                className="dish-ring"
+                style={{ translateZ: -80 }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
+              />
+              {/* steam */}
+              <svg className="dish-steam" viewBox="0 0 200 120" aria-hidden="true">
+                {[60, 100, 140].map((x, i) => (
+                  <motion.path
+                    key={x}
+                    d={`M${x} 110 q -12 -22 0 -44 q 12 -22 0 -44`}
+                    fill="none"
+                    stroke="rgba(255,255,255,.65)"
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.65, 0], y: [12, -34] }}
+                    transition={{ duration: 3, repeat: Infinity, delay: i * 0.6, ease: 'easeOut' }}
+                  />
+                ))}
+              {/* floating plate */}
+              </svg>
+              <motion.div
+                className="dish-plate"
+                style={{ translateZ: 10 }}
+                initial={{ opacity: 0, scale: 0.6, y: 40 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ delay: 0.2, ...{ type: 'spring', stiffness: 90, damping: 12 } }}
+              >
+                <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }} style={{ width: '100%', height: '100%' }}>
+                  {imgOk ? (
+                    <img src={DISH_IMG} alt="" onError={() => setImgOk(false)} draggable="false" />
+                  ) : (
+                    <div className="dish-fallback">🍲</div>
+                  )}
+                </motion.div>
+              </motion.div>
+
+              {/* parallax ingredient chips at varying depths */}
+              {chips.map((c, i) => (
+                <motion.span
+                  key={c.e}
+                  className={`dish-chip ${c.cls}`}
+                  style={{ translateZ: c.z }}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1, y: [0, i % 2 ? -10 : 10, 0] }}
+                  transition={{
+                    opacity: { delay: 0.5 + i * 0.1 },
+                    scale: { delay: 0.5 + i * 0.1, type: 'spring', stiffness: 200, damping: 12 },
+                    y: { duration: 4 + i, repeat: Infinity, ease: 'easeInOut' }
+                  }}
+                >
+                  {c.e}
+                </motion.span>
+              ))}
+            </motion.div>
+          </div>
+
           <motion.h2
             className="login-tagline"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+            transition={{ delay: 0.45 }}
           >
             {t('heroTitlePre')} <span className="accent">{t('heroTitleAccent')}</span>
           </motion.h2>
         </div>
 
-        {/* Sign-in card */}
+        {/* ---- Sign-in card ---- */}
         <motion.div
           className="login-card glass-dark"
-          initial={{ opacity: 0, x: ar ? -30 : 30 }}
+          style={{ x: gx, y: gy }}
+          initial={{ opacity: 0, x: ar ? -40 : 40 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="login-brand">
             <span className="brand-badge">🍽️</span>
@@ -163,13 +191,7 @@ export default function LoginGate({ onLogin }) {
               <div className="demo-note">{t('demoNote')}</div>
               <div className="field">
                 <label>{t('emailLabel')}</label>
-                <input
-                  type="email"
-                  value={email}
-                  placeholder="name@efb.eg"
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <input type="email" value={email} placeholder="name@efb.eg" onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <button className="btn btn-orange btn-block" type="submit" disabled={busy}>
                 {busy ? <span className="spinner" /> : '🔓'} {t('enter')}
