@@ -17,6 +17,7 @@ const resources = {
       loginSecure: '🔒 Secured by your organization account',
       demoNote: 'Demo mode — enter your work email to continue.',
       enter: 'Enter',
+      prep: 'Setting the table…',
 
       // hero
       eyebrow: '🍴 Fresh meals, made simple',
@@ -125,6 +126,7 @@ const resources = {
       loginSecure: '🔒 مؤمَّن بحساب مؤسستك',
       demoNote: 'وضع تجريبي — اكتب إيميل العمل عشان تكمّل.',
       enter: 'دخول',
+      prep: 'بنجهّز السفرة…',
 
       eyebrow: '🍴 وجبات طازة وببساطة',
       heroTitlePre: 'وجبات شهية لفريقك،',

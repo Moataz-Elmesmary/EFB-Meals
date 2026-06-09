@@ -330,10 +330,14 @@ a { color: inherit; }
 }
 
 /* ---------- Boot splash ---------- */
-.boot { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; }
-.boot-inner { position: relative; z-index: 1; }
-.dish-spin { font-size: 64px; display: inline-block; animation: dish-pulse 1.4s ease-in-out infinite; }
-@keyframes dish-pulse { 0%,100% { transform: scale(1) rotate(-6deg); opacity: .7; } 50% { transform: scale(1.18) rotate(6deg); opacity: 1; } }
+.boot { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; color: #fff; }
+.boot-inner { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; }
+.boot-logo { height: 66px; width: auto; filter: brightness(0) invert(1) drop-shadow(0 8px 18px rgba(0,0,0,.45)); margin-bottom: 26px; }
+.boot-foods { display: flex; gap: 14px; font-size: clamp(30px, 6vw, 44px); margin-bottom: 26px; }
+.boot-foods span { filter: drop-shadow(0 10px 16px rgba(0,0,0,.4)); }
+.boot-bar { width: min(260px, 70vw); height: 7px; border-radius: 999px; background: rgba(255,255,255,.18); overflow: hidden; }
+.boot-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--orange), var(--gold)); }
+.boot-text { margin-top: 16px; font-weight: 800; letter-spacing: .3px; color: rgba(255,255,255,.85); }
 
 /* ==========================================================================
    Login gate (mandatory sign-in) — cinematic dark stage

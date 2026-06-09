@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next';
 import AuroraBackground from './AuroraBackground';
 import { loadConfig, loginMicrosoft, loginDemo } from '../auth';
 
+const DISH_IMG =
+  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=560&h=560&q=80';
+
 const spring = { stiffness: 120, damping: 16, mass: 0.6 };
-const ORBIT = ['🍕', '🍮', '🥗', '🌶️', '🍗', '🥑'];
 
 export default function LoginGate({ onLogin }) {
   const { t, i18n } = useTranslation();
@@ -14,8 +16,9 @@ export default function LoginGate({ onLogin }) {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [imgOk, setImgOk] = useState(true);
 
-  // mouse parallax (normalized -0.5..0.5) → 3D tilt of the centre stage
+  // mouse parallax (normalized -0.5..0.5)
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
   const rotX = useSpring(useTransform(my, [-0.5, 0.5], [14, -14]), spring);
@@ -58,6 +61,8 @@ export default function LoginGate({ onLogin }) {
     }
   };
 
+  const orbitEmojis = ['🍕', '🍮', '🥗', '🌶️', '🍗', '🥑'];
+
   return (
     <div className="login-gate" dir={ar ? 'rtl' : 'ltr'} onMouseMove={onMove} onMouseLeave={onLeave}>
       <AuroraBackground variant="night" />
@@ -67,51 +72,69 @@ export default function LoginGate({ onLogin }) {
       </button>
 
       <div className="login-split">
-        {/* ---- Centre stage: glowing EFB emblem + orbiting ingredients ---- */}
+        {/* ---- Cinematic visual stage: food plate + orbiting ingredients ---- */}
         <div className="login-visual">
           <div className="dish-perspective">
             <motion.div className="dish-tilt" style={{ rotateX: rotX, rotateY: rotY }}>
+              {/* rotating glow ring (sits behind, depth) */}
               <motion.span
                 className="dish-ring"
                 style={{ translateZ: -80 }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
               />
-
+              {/* steam */}
+              <svg className="dish-steam" viewBox="0 0 200 120" aria-hidden="true">
+                {[60, 100, 140].map((x, i) => (
+                  <motion.path
+                    key={x}
+                    d={`M${x} 110 q -12 -22 0 -44 q 12 -22 0 -44`}
+                    fill="none"
+                    stroke="rgba(255,255,255,.65)"
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.65, 0], y: [12, -34] }}
+                    transition={{ duration: 3, repeat: Infinity, delay: i * 0.6, ease: 'easeOut' }}
+                  />
+                ))}
+              {/* floating plate */}
+              </svg>
               <motion.div
-                className="dish-emblem"
-                style={{ translateZ: 20 }}
-                initial={{ opacity: 0, scale: 0.6 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15, type: 'spring', stiffness: 90, damping: 12 }}
+                className="dish-plate"
+                style={{ translateZ: 10 }}
+                initial={{ opacity: 0, scale: 0.6, y: 40 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ delay: 0.2, ...{ type: 'spring', stiffness: 90, damping: 12 } }}
               >
-                <motion.img
-                  src="/LOGO.png"
-                  alt="Egyptian Food Bank"
-                  className="emblem-logo"
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-                />
+                <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }} style={{ width: '100%', height: '100%' }}>
+                  {imgOk ? (
+                    <img src={DISH_IMG} alt="" onError={() => setImgOk(false)} draggable="false" />
+                  ) : (
+                    <div className="dish-fallback">🍲</div>
+                  )}
+                </motion.div>
               </motion.div>
 
-              {/* ingredients orbiting the emblem */}
+              {/* ingredients orbiting the plate (mouse tilt adds 3D parallax) */}
               <motion.div
                 className="dish-orbitring"
                 style={{ translateZ: 60 }}
                 initial={{ opacity: 0, scale: 0.6 }}
                 animate={{ opacity: 1, scale: 1, rotate: 360 }}
                 transition={{
-                  opacity: { delay: 0.4, duration: 0.6 },
-                  scale: { delay: 0.4, type: 'spring', stiffness: 140, damping: 14 },
+                  opacity: { delay: 0.5, duration: 0.6 },
+                  scale: { delay: 0.5, type: 'spring', stiffness: 140, damping: 14 },
                   rotate: { duration: 22, repeat: Infinity, ease: 'linear' }
                 }}
               >
-                {ORBIT.map((e, i) => (
+                {orbitEmojis.map((e, i) => (
                   <span
                     key={e}
                     className="orbit-slot"
-                    style={{ transform: `rotate(${(360 / ORBIT.length) * i}deg) translateY(calc(var(--orbit-r) * -1))` }}
+                    style={{ transform: `rotate(${(360 / orbitEmojis.length) * i}deg) translateY(calc(var(--orbit-r) * -1))` }}
                   >
+                    {/* counter-rotate so the emoji stays upright while orbiting */}
                     <motion.span
                       className="orbit-emoji"
                       animate={{ rotate: -360 }}
@@ -135,7 +158,7 @@ export default function LoginGate({ onLogin }) {
           </motion.h2>
         </div>
 
-        {/* ---- Sign-in card (stable) ---- */}
+        {/* ---- Sign-in card ---- */}
         <motion.div
           className="login-card glass-dark"
           initial={{ opacity: 0, x: ar ? -40 : 40 }}
