@@ -287,14 +287,100 @@ a { color: inherit; }
 /* ---------- RTL niceties ---------- */
 [dir="rtl"] .meal-card.selected::after { inset-inline-end: 14px; }
 
-/* ---------- Responsive ---------- */
+/* ==========================================================================
+   Fluid background + ambient layering
+   ========================================================================== */
+.fluid-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.ambient { position: fixed; opacity: .55; filter: saturate(120%); }
+.app-shell { position: relative; z-index: 0; }
+.app-shell .topbar,
+.app-shell .hero,
+.app-shell .section,
+.app-shell .page-footer { position: relative; z-index: 1; }
+
+/* ---------- Boot splash ---------- */
+.boot { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; }
+.boot-inner { position: relative; z-index: 1; }
+.dish-spin { font-size: 64px; display: inline-block; animation: dish-pulse 1.4s ease-in-out infinite; }
+@keyframes dish-pulse { 0%,100% { transform: scale(1) rotate(-6deg); opacity: .7; } 50% { transform: scale(1.18) rotate(6deg); opacity: 1; } }
+
+/* ==========================================================================
+   Login gate (mandatory sign-in)
+   ========================================================================== */
+.login-gate { position: fixed; inset: 0; overflow: hidden; display: grid; place-items: center; padding: 24px; }
+.login-lang {
+  position: absolute; top: 22px; inset-inline-end: 22px; z-index: 3;
+  padding: 9px 16px; border-radius: var(--radius-full); font-weight: 800;
+  background: rgba(255,255,255,.7); color: var(--emerald); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.6);
+}
+.login-stage {
+  position: relative; z-index: 1; display: grid; gap: 8px; justify-items: center;
+  width: 100%; max-width: 440px;
+}
+
+/* central animated hero dish */
+.login-dish { position: relative; width: 320px; height: 280px; display: grid; place-items: center; margin-bottom: -12px; }
+.dish-glow {
+  position: absolute; width: 280px; height: 280px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,99,0,.30), rgba(8,86,72,.18) 45%, transparent 70%);
+  filter: blur(6px); animation: glow-pulse 5s ease-in-out infinite;
+}
+@keyframes glow-pulse { 0%,100% { transform: scale(1); opacity: .8; } 50% { transform: scale(1.12); opacity: 1; } }
+.dish-svg { position: relative; width: 260px; height: auto; filter: drop-shadow(0 24px 40px rgba(8,30,28,.25)); }
+.dish-orbit { position: absolute; inset: 0; display: grid; place-items: center; font-size: 26px; filter: drop-shadow(0 6px 10px rgba(8,30,28,.2)); }
+
+/* glass card */
+.glass {
+  background: rgba(255,255,255,.72); backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,.65); box-shadow: var(--shadow-xl);
+}
+.login-card { width: 100%; border-radius: var(--radius-xl); padding: 30px 28px; text-align: center; }
+.login-brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 900; font-size: 1.15rem; margin-bottom: 14px; }
+.login-brand small { display: block; font-weight: 600; font-size: .72rem; color: var(--ink-3); }
+.login-title { font-size: 1.55rem; font-weight: 900; margin: 4px 0 6px; }
+.login-sub { color: var(--ink-3); margin: 0 0 22px; font-size: .98rem; line-height: 1.6; }
+.btn-block { width: 100%; }
+.demo-form { text-align: start; display: grid; gap: 14px; }
+.demo-note { background: var(--gold-light); color: var(--gold-dark); border-radius: var(--radius); padding: 11px 14px; font-size: .85rem; font-weight: 700; }
+.login-foot { margin-top: 18px; color: var(--ink-4); font-size: .82rem; }
+
+/* ---------- User chip (topbar) ---------- */
+.user-chip { display: inline-flex; align-items: center; gap: 9px; background: var(--paper-3); border-radius: var(--radius-full); padding: 5px 8px 5px 5px; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; color: #fff; background: linear-gradient(135deg, var(--orange), var(--orange-dark)); }
+.user-name { font-weight: 700; font-size: .9rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logout-btn { width: 30px; height: 30px; border-radius: 50%; color: var(--ink-3); font-size: 1rem; }
+.logout-btn:hover { background: #fdecec; color: var(--danger); }
+
+/* glassy topbar already; make sure it floats above ambient */
+.topbar { z-index: 50; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
 @media (max-width: 920px) {
   .hero-grid { grid-template-columns: 1fr; }
   .hero-visual { height: 280px; order: -1; }
   .form-grid { grid-template-columns: 1fr; }
   .kpis { grid-template-columns: repeat(2, 1fr); }
-  .nav-tabs { display: none; }
+  .nav-tabs { order: 3; }
+  .topbar-inner { flex-wrap: wrap; height: auto; padding: 12px 0; gap: 10px; }
+  .user-name { max-width: 80px; }
 }
 @media (max-width: 560px) {
+  .container { padding: 0 16px; }
   .stats { grid-template-columns: 1fr; }
+  .hero { padding: 36px 0 24px; }
+  .section { padding: 32px 0; }
+  .panel { padding: 20px; }
+  .menu-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .meal-emoji { font-size: 44px; }
+  .login-dish { width: 240px; height: 220px; }
+  .dish-svg { width: 200px; }
+  .dish-glow { width: 210px; height: 210px; }
+  .login-card { padding: 24px 20px; }
+  .user-chip .user-name { display: none; }
+  .nav-tabs { width: 100%; justify-content: center; }
+  .req-actions { width: 100%; }
+  .req-actions .btn { flex: 1; }
 }

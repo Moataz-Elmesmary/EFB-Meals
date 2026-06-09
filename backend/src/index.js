@@ -9,6 +9,7 @@ const fs = require('fs');
 const db = require('./db');
 const sqlListener = require('./sqlListener');
 
+const authRouter = require('./routes/auth');
 const requestsRouter = require('./routes/requests');
 const kitchenRouter = require('./routes/kitchen');
 const sapRouter = require('./routes/sap');
@@ -19,6 +20,7 @@ app.use(helmet());
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
+app.use('/api', authRouter);
 app.use('/api', requestsRouter);
 app.use('/api/kitchen', kitchenRouter);
 app.use('/api/sap', sapRouter);

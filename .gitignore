@@ -6,3 +6,11 @@ backend/uploads/
 .env
 
 frontend/dist/
+
+# WinHTTrack mirror artifacts
+Meals/
+*.whtt
+backblue.gif
+fade.gif
+hts-*.txt
+/index.html

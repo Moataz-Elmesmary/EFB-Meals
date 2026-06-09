@@ -2,31 +2,70 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import RequestForm from './RequestForm';
-import AuthButton from './AuthButton';
 import KitchenDashboard from './components/KitchenDashboard';
+import LoginGate from './components/LoginGate';
+import FluidBackground from './components/FluidBackground';
 import { getMeals } from './api';
+import { restoreSession, logout } from './auth';
+
+function Reveal({ children, delay = 0 }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ delay, ease: [0.22, 1, 0.36, 1], duration: 0.6 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function App() {
   const { t, i18n } = useTranslation();
   const ar = i18n.language === 'ar';
   const [meals, setMeals] = useState([]);
   const [user, setUser] = useState(null);
+  const [booting, setBooting] = useState(true);
   const [view, setView] = useState('request'); // 'request' | 'kitchen'
 
   useEffect(() => {
-    getMeals().then(setMeals).catch(() => setMeals([]));
+    restoreSession()
+      .then((u) => setUser(u))
+      .finally(() => setBooting(false));
   }, []);
+
+  useEffect(() => {
+    if (user) getMeals().then(setMeals).catch(() => setMeals([]));
+  }, [user]);
 
   useEffect(() => {
     document.documentElement.dir = ar ? 'rtl' : 'ltr';
     document.documentElement.lang = i18n.language;
   }, [ar, i18n.language]);
 
+  const doLogout = async () => {
+    await logout();
+    setUser(null);
+  };
+
   const scrollToForm = () => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' });
+
+  if (booting) {
+    return (
+      <div className="boot">
+        <FluidBackground />
+        <div className="boot-inner"><span className="dish-spin">🍽️</span></div>
+      </div>
+    );
+  }
+
+  if (!user) return <LoginGate onLogin={setUser} />;
 
   return (
     <div className="app-shell">
-      {/* Top bar */}
+      <FluidBackground intensity={0.5} className="ambient" />
+
       <header className="topbar">
         <div className="container topbar-inner">
           <div className="brand">
@@ -48,12 +87,16 @@ export default function App() {
           <button className="lang-btn" onClick={() => i18n.changeLanguage(ar ? 'en' : 'ar')}>
             {ar ? 'EN' : 'عربي'}
           </button>
+          <div className="user-chip" title={user.email}>
+            <span className="avatar">{(user.name || user.email || '?')[0].toUpperCase()}</span>
+            <span className="user-name">{user.name}</span>
+            <button className="logout-btn" onClick={doLogout} title={t('logout')}>⎋</button>
+          </div>
         </div>
       </header>
 
       {view === 'request' ? (
         <>
-          {/* Hero */}
           <section className="hero">
             <div className="container hero-grid">
               <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.22, 1, 0.36, 1] }}>
@@ -63,18 +106,12 @@ export default function App() {
                 </h1>
                 <p className="hero-text">{t('heroText')}</p>
                 <div className="cta-row">
-                  <button className="btn btn-orange" onClick={scrollToForm}>🚀 {t('ctaOrder')}</button>
-                  <AuthButton onSignIn={setUser} user={user} />
+                  <button className="btn btn-orange" onClick={scrollToForm}>🍴 {t('ctaOrder')}</button>
                 </div>
-                {user && (
-                  <p style={{ marginTop: 14, color: 'var(--ink-3)' }}>
-                    {t('loggedInAs')} <strong>{user.name || user.username}</strong>
-                  </p>
-                )}
                 <div className="stats">
                   <div className="stat"><div className="num">{meals.length}</div><div className="lbl">{t('statMeals')}</div></div>
-                  <div className="stat"><div className="num">{t('statApprovalVal')}</div><div className="lbl">{t('statApproval')}</div></div>
-                  <div className="stat"><div className="num">SAP</div><div className="lbl">{t('statSap')}</div></div>
+                  <div className="stat"><div className="num">⚡</div><div className="lbl">{t('statFast')}</div></div>
+                  <div className="stat"><div className="num">🌍</div><div className="lbl">{t('statBilingual')}</div></div>
                 </div>
               </motion.div>
 
@@ -90,16 +127,19 @@ export default function App() {
             </div>
           </section>
 
-          {/* Order section */}
           <section className="section" id="order">
             <div className="container">
-              <div className="section-head">
-                <div>
-                  <h2 className="section-title">🍱 {t('menuTitle')}</h2>
-                  <p className="section-sub">{t('menuSub')}</p>
+              <Reveal>
+                <div className="section-head">
+                  <div>
+                    <h2 className="section-title">🍱 {t('menuTitle')}</h2>
+                    <p className="section-sub">{t('menuSub')}</p>
+                  </div>
                 </div>
-              </div>
-              <RequestForm meals={meals} user={user} />
+              </Reveal>
+              <Reveal delay={0.05}>
+                <RequestForm meals={meals} user={user} />
+              </Reveal>
             </div>
           </section>
         </>

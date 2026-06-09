@@ -11,7 +11,7 @@ export default function RequestForm({ meals, user }) {
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [form, setForm] = useState({
     requester_name: user?.name || '',
-    requester_email: user?.username || '',
+    requester_email: user?.email || user?.username || '',
     department: '',
     people: 1,
     needed_date: '',
