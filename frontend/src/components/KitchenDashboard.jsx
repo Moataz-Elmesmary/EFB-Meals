@@ -49,7 +49,8 @@ export default function KitchenDashboard() {
     if (note != null) run(r.id, () => addKitchenNote(r.id, note));
   };
 
-  const mealLabel = (r) => (r.is_special ? t('special') : ar ? r.name_ar : r.name_en);
+  const mealLabel = (r) => r.meal_name || (ar ? r.name_ar : r.name_en) || t('special');
+  const itemsLine = (r) => (r.items && r.items.length ? r.items.map((it) => `${it.special ? '📝 ' : ''}${it.meal_name} ×${it.quantity}`).join(' · ') : null);
   const pdfUrl = (r) => (r.budget_id ? `${API_BASE}/api/kitchen/budget/${r.budget_id}/file` : fileUrl(r.attachment_path));
 
   return (
@@ -98,7 +99,7 @@ export default function KitchenDashboard() {
                   </div>
                 </div>
 
-                {r.is_special && r.special_request ? <div className="special-box">“{r.special_request}”</div> : null}
+                {itemsLine(r) ? <div className="items-line">🧾 {itemsLine(r)}</div> : null}
                 {r.notes ? <div className="special-box">📝 {r.notes}</div> : null}
                 {r.reject_reason && r.status === 'budget_rejected' ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {r.reject_reason}</div> : null}
 

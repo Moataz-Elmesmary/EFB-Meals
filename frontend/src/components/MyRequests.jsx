@@ -76,7 +76,8 @@ export default function MyRequests() {
     load();
   }, []);
 
-  const mealLabel = (r) => (r.is_special ? t('special') : ar ? r.name_ar : r.name_en);
+  const mealLabel = (r) => r.meal_name || (ar ? r.name_ar : r.name_en) || t('special');
+  const itemsLine = (r) => (r.items && r.items.length ? r.items.map((it) => `${it.special ? '📝 ' : ''}${it.meal_name} ×${it.quantity}`).join(' · ') : null);
   const stepIndex = (s) => {
     const i = STEPS.indexOf(s);
     return i < 0 ? 0 : i;
@@ -135,7 +136,7 @@ export default function MyRequests() {
                   </div>
                 </div>
 
-                {r.is_special && r.special_request ? <div className="special-box">“{r.special_request}”</div> : null}
+                {itemsLine(r) ? <div className="items-line">🧾 {itemsLine(r)}</div> : null}
                 {r.kitchen_notes ? <div className="special-box">💬 {t('kitchenSays')}: {r.kitchen_notes}</div> : null}
                 {r.reject_reason && r.status === 'budget_rejected' ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {t('rejectedReason')}: {r.reject_reason}</div> : null}
 

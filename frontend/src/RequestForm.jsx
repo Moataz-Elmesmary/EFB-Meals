@@ -7,44 +7,59 @@ import { createRequest } from './api';
 export default function RequestForm({ meals, user }) {
   const { t, i18n } = useTranslation();
   const ar = i18n.language === 'ar';
-  const [mode, setMode] = useState('menu'); // 'menu' | 'special'
-  const [selectedMeal, setSelectedMeal] = useState(null);
-  const [form, setForm] = useState({
-    people: 1,
-    needed_date: '',
-    needed_time: '',
-    notes: '',
-    special_request: ''
-  });
-  const today = new Date().toISOString().slice(0, 10);
-  const isUrgent = !form.needed_date || form.needed_date === today;
+  const [cart, setCart] = useState([]); // { key, meal_id, name_en, name_ar, emoji, quantity, special }
+  const [specialText, setSpecialText] = useState('');
+  const [form, setForm] = useState({ needed_date: '', needed_time: '', notes: '' });
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
 
   const mealOptions = useMemo(() => meals || [], [meals]);
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  const today = new Date().toISOString().slice(0, 10);
+  const isUrgent = !form.needed_date || form.needed_date === today;
+  const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
+
+  const addMeal = (meal) =>
+    setCart((c) => {
+      const i = c.findIndex((x) => x.meal_id === meal.id);
+      if (i >= 0) {
+        const copy = [...c];
+        copy[i] = { ...copy[i], quantity: copy[i].quantity + 1 };
+        return copy;
+      }
+      return [...c, { key: `m${meal.id}`, meal_id: meal.id, name_en: meal.name_en, name_ar: meal.name_ar, emoji: meal.emoji, quantity: 1, special: false }];
+    });
+
+  const addSpecial = () => {
+    const text = specialText.trim();
+    if (!text) return;
+    setCart((c) => [...c, { key: `s${Date.now()}`, meal_id: null, name_en: text, name_ar: text, emoji: '✏️', quantity: 1, special: true }]);
+    setSpecialText('');
+  };
+
+  const setQty = (key, q) => setCart((c) => c.map((x) => (x.key === key ? { ...x, quantity: Math.max(1, q) } : x)));
+  const removeItem = (key) => setCart((c) => c.filter((x) => x.key !== key));
+  const countOf = (mealId) => cart.find((x) => x.meal_id === mealId)?.quantity || 0;
 
   const submit = async (e) => {
     e.preventDefault();
     setError(null);
-
-    if (mode === 'menu' && !selectedMeal) return setError(t('pickMealOrSpecial'));
-    if (mode === 'special' && !form.special_request.trim()) return setError(t('pickMealOrSpecial'));
-
+    if (!cart.length) return setError(t('cartEmpty'));
     setStatus('loading');
     try {
       await createRequest({
-        ...form,
         requester_name: user?.name || '',
         requester_email: user?.email || '',
         department: user?.department || '',
         phone: user?.phone || '',
-        meal_id: mode === 'menu' ? selectedMeal.id : null,
-        special_request: mode === 'special' ? form.special_request : ''
+        needed_date: form.needed_date,
+        needed_time: form.needed_time,
+        notes: form.notes,
+        items: cart.map((i) => (i.special ? { special: true, meal_name: i.name_en, quantity: i.quantity } : { meal_id: i.meal_id, quantity: i.quantity }))
       });
       setStatus('success');
-      setSelectedMeal(null);
-      setForm((p) => ({ ...p, people: 1, needed_date: '', needed_time: '', notes: '', special_request: '' }));
+      setCart([]);
+      setForm({ needed_date: '', needed_time: '', notes: '' });
       setTimeout(() => setStatus(null), 4000);
     } catch (err) {
       setError(err.response?.data?.error || t('error'));
@@ -54,41 +69,7 @@ export default function RequestForm({ meals, user }) {
 
   return (
     <div>
-      {/* Mode toggle */}
-      <div className="mode-toggle">
-        <button className={mode === 'menu' ? 'active' : ''} onClick={() => setMode('menu')} type="button">
-          🍱 {t('modeMenu')}
-        </button>
-        <button className={mode === 'special' ? 'active' : ''} onClick={() => setMode('special')} type="button">
-          ✏️ {t('modeSpecial')}
-        </button>
-      </div>
-
-      {/* Menu grid */}
-      <AnimatePresence mode="wait">
-        {mode === 'menu' && (
-          <motion.div
-            key="menu"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="menu-grid"
-            style={{ marginBottom: 28 }}
-          >
-            {mealOptions.map((meal, i) => (
-              <MenuCard
-                key={meal.id}
-                meal={meal}
-                index={i}
-                selected={selectedMeal?.id === meal.id}
-                onSelect={setSelectedMeal}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Identity is read automatically from the signed-in Microsoft account */}
+      {/* Identity (auto from Microsoft) */}
       <div className="identity-card">
         <span className="avatar lg">{(user?.name || user?.email || '?')[0].toUpperCase()}</span>
         <div className="identity-info">
@@ -102,102 +83,83 @@ export default function RequestForm({ meals, user }) {
         <span className="identity-tag">{t('orderingAs')}</span>
       </div>
 
-      <form onSubmit={submit} className="panel">
-        <div className="form-grid">
-          <div className="field">
-            <label>{t('dateLabel')}</label>
-            <input type="date" min={today} value={form.needed_date} onChange={(e) => set('needed_date', e.target.value)} />
-            {isUrgent && <span className="urgent-hint">🚨 {t('urgentHint')}</span>}
-          </div>
+      {/* Menu */}
+      <div className="menu-grid" style={{ marginBottom: 24 }}>
+        {mealOptions.map((meal, i) => (
+          <MenuCard key={meal.id} meal={meal} index={i} count={countOf(meal.id)} onSelect={addMeal} />
+        ))}
+      </div>
 
-          <div className="field">
-            <label>{t('timeLabel')}</label>
-            <input type="time" value={form.needed_time} onChange={(e) => set('needed_time', e.target.value)} />
-          </div>
+      {/* Add a special request line */}
+      <div className="special-add">
+        <input
+          value={specialText}
+          placeholder={t('specialLinePlaceholder')}
+          onChange={(e) => setSpecialText(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSpecial())}
+        />
+        <button type="button" className="btn btn-ghost" onClick={addSpecial}>✏️ {t('addSpecialLine')}</button>
+      </div>
 
-          <div className="field">
-            <label>{t('peopleLabel')}</label>
-            <div className="qty">
-              <button type="button" onClick={() => set('people', Math.max(1, form.people - 1))}>−</button>
-              <input
-                type="number"
-                min="1"
-                value={form.people}
-                onChange={(e) => set('people', Math.max(1, parseInt(e.target.value, 10) || 1))}
-              />
-              <button type="button" onClick={() => set('people', form.people + 1)}>+</button>
-            </div>
-          </div>
+      {/* Cart */}
+      <div className="panel" style={{ marginTop: 18 }}>
+        <h3 className="section-title" style={{ fontSize: '1.2rem', marginBottom: 14 }}>
+          🛒 {t('cartTitle')} {totalQty > 0 && <span className="cart-count">{totalQty}</span>}
+        </h3>
 
-          {mode === 'menu' ? (
+        {cart.length === 0 ? (
+          <div className="cart-empty">{t('cartEmpty')}</div>
+        ) : (
+          <div className="cart-list">
+            <AnimatePresence>
+              {cart.map((it) => (
+                <motion.div key={it.key} className="cart-row" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                  <span className="cart-emoji">{it.emoji}</span>
+                  <span className="cart-name">{it.special ? '📝 ' : ''}{ar ? it.name_ar : it.name_en}</span>
+                  <div className="qty sm">
+                    <button type="button" onClick={() => setQty(it.key, it.quantity - 1)}>−</button>
+                    <input value={it.quantity} onChange={(e) => setQty(it.key, parseInt(e.target.value, 10) || 1)} />
+                    <button type="button" onClick={() => setQty(it.key, it.quantity + 1)}>+</button>
+                  </div>
+                  <button type="button" className="cart-remove" onClick={() => removeItem(it.key)}>✕</button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+
+        <form onSubmit={submit} style={{ marginTop: 18 }}>
+          <div className="form-grid">
             <div className="field">
-              <label>{t('selectedMeal')}</label>
-              <div
-                style={{
-                  minHeight: 48,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '0 14px',
-                  border: '1.5px solid var(--border)',
-                  borderRadius: 'var(--radius)',
-                  background: 'var(--paper-2)',
-                  color: selectedMeal ? 'var(--ink)' : 'var(--ink-4)',
-                  fontWeight: 700
-                }}
-              >
-                {selectedMeal ? (
-                  <>
-                    <span style={{ fontSize: 24 }}>{selectedMeal.emoji}</span>
-                    {ar ? selectedMeal.name_ar : selectedMeal.name_en}
-                  </>
-                ) : (
-                  t('noMealSelected')
-                )}
-              </div>
+              <label>{t('dateLabel')}</label>
+              <input type="date" min={today} value={form.needed_date} onChange={(e) => set('needed_date', e.target.value)} />
+              {isUrgent && <span className="urgent-hint">🚨 {t('urgentHint')}</span>}
             </div>
-          ) : null}
-
-          {mode === 'special' && (
+            <div className="field">
+              <label>{t('timeLabel')}</label>
+              <input type="time" value={form.needed_time} onChange={(e) => set('needed_time', e.target.value)} />
+            </div>
             <div className="field full">
-              <label>{t('specialLabel')}</label>
-              <textarea
-                value={form.special_request}
-                placeholder={t('specialPlaceholder')}
-                onChange={(e) => set('special_request', e.target.value)}
-              />
+              <label>{t('notesLabel')} <span className="hint">({t('optional')})</span></label>
+              <textarea style={{ minHeight: 70 }} value={form.notes} placeholder={t('notesPlaceholder')} onChange={(e) => set('notes', e.target.value)} />
             </div>
-          )}
-
-          <div className="field full">
-            <label>{t('notesLabel')} <span className="hint">({t('optional')})</span></label>
-            <textarea
-              style={{ minHeight: 80 }}
-              value={form.notes}
-              placeholder={t('notesPlaceholder')}
-              onChange={(e) => set('notes', e.target.value)}
-            />
           </div>
-        </div>
 
-        <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <button className="btn btn-orange" type="submit" disabled={status === 'loading'}>
-            {status === 'loading' ? <><span className="spinner" /> {t('submitting')}</> : <>🚀 {t('submit')}</>}
-          </button>
-          <AnimatePresence>
-            {status === 'success' && (
-              <motion.div className="alert alert-success" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
-                ✅ {t('requestSent')}
-              </motion.div>
-            )}
-            {error && (
-              <motion.div className="alert alert-error" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
-                ⚠️ {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </form>
+          <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <button className="btn btn-orange btn-lg" type="submit" disabled={status === 'loading' || !cart.length}>
+              {status === 'loading' ? <><span className="spinner" /> {t('submitting')}</> : <>🚀 {t('submit')}</>}
+            </button>
+            <AnimatePresence>
+              {status === 'success' && (
+                <motion.div className="alert alert-success" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>✅ {t('requestSent')}</motion.div>
+              )}
+              {error && (
+                <motion.div className="alert alert-error" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>⚠️ {error}</motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

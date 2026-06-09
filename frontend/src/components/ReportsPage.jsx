@@ -42,7 +42,7 @@ export default function ReportsPage() {
     [filtered]
   );
 
-  const mealLabel = (r) => (r.is_special ? t('special') : ar ? r.name_ar : r.name_en);
+  const mealLabel = (r) => r.meal_name || (ar ? r.name_ar : r.name_en) || t('special');
 
   const exportCsv = () => {
     const headers = ['ID', 'Requester', 'Email', 'Department', 'Phone', 'Meal', 'People', 'Status', 'Budget', 'Currency', 'NeededDate', 'CreatedAt'];
@@ -119,7 +119,7 @@ export default function ReportsPage() {
                     <div style={{ color: 'var(--ink-4)', fontSize: '.8rem' }}>{r.requester_email}</div>
                   </td>
                   <td>{r.department || '—'}</td>
-                  <td>{r.is_special ? <em>{r.special_request || t('special')}</em> : mealLabel(r)}</td>
+                  <td>{mealLabel(r)}</td>
                   <td>{r.people}</td>
                   <td><span className={`badge badge-${r.status}`}>{t(`status_${r.status}`)}</span></td>
                   <td>{r.amount != null ? `${r.amount} ${r.currency || 'EGP'}` : '—'}</td>

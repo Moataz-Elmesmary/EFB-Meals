@@ -2,8 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-export default function MenuCard({ meal, selected, onSelect, index = 0 }) {
-  const { i18n } = useTranslation();
+export default function MenuCard({ meal, count = 0, onSelect, index = 0 }) {
+  const { t, i18n } = useTranslation();
   const ar = i18n.language === 'ar';
   const name = ar ? meal.name_ar : meal.name_en;
   const sub = ar ? meal.name_en : meal.name_ar;
@@ -12,7 +12,7 @@ export default function MenuCard({ meal, selected, onSelect, index = 0 }) {
   return (
     <motion.button
       type="button"
-      className={`meal-card ${selected ? 'selected' : ''}`}
+      className={`meal-card ${count > 0 ? 'selected' : ''}`}
       onClick={() => onSelect(meal)}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
@@ -21,6 +21,7 @@ export default function MenuCard({ meal, selected, onSelect, index = 0 }) {
       whileTap={{ scale: 0.98 }}
       style={{ textAlign: ar ? 'right' : 'left' }}
     >
+      {count > 0 && <span className="cart-badge">× {count}</span>}
       <div className="meal-emoji">{meal.emoji || '🍽️'}</div>
       <div className="meal-name">
         {name}
@@ -29,7 +30,7 @@ export default function MenuCard({ meal, selected, onSelect, index = 0 }) {
       <div className="meal-desc">{desc}</div>
       <div className="meal-foot">
         <span className="cat-chip">{meal.category}</span>
-        {meal.price ? <span className="meal-price">{meal.price} EGP</span> : null}
+        <span className="add-pill">＋ {t('addBtn')}</span>
       </div>
     </motion.button>
   );

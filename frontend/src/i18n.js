@@ -67,6 +67,11 @@ const resources = {
       menuSub: 'Pick a dish or switch to a special request',
       modeMenu: 'From the menu',
       modeSpecial: 'Special request',
+      cartTitle: 'Your order',
+      cartEmpty: 'Your cart is empty — pick from the menu above',
+      addSpecialLine: 'Add special',
+      specialLinePlaceholder: 'e.g. 10 sandwiches, no nuts…',
+      addBtn: 'Add',
 
       // form
       formTitle: 'Create your meal request',
@@ -216,6 +221,11 @@ const resources = {
       menuSub: 'اختر طبق أو حوّل لطلب خاص',
       modeMenu: 'من المنيو',
       modeSpecial: 'طلب خاص',
+      cartTitle: 'طلبك',
+      cartEmpty: 'سلتك فاضية — اختر من المنيو فوق',
+      addSpecialLine: 'أضف طلب خاص',
+      specialLinePlaceholder: 'مثال: ١٠ ساندويتش بدون مكسرات…',
+      addBtn: 'أضف',
 
       formTitle: 'أنشئ طلب وجبتك',
       formSub: 'قولنا الطلب لمين وعدد كام فرد',

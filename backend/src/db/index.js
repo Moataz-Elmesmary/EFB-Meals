@@ -51,20 +51,55 @@ async function createMealRequest(data) {
   return typeof row === 'object' ? row.id : row;
 }
 
-const getRequest = (id) =>
-  db('meal_requests as mr')
+// Create an order (header) plus its cart line items.
+async function createOrder(header, items) {
+  const id = await createMealRequest(header);
+  if (items && items.length) {
+    await db('order_items').insert(
+      items.map((it) => ({
+        meal_request_id: id,
+        meal_id: it.meal_id || null,
+        meal_name: it.meal_name,
+        emoji: it.emoji || null,
+        quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+        unit_price: it.unit_price || 0
+      }))
+    );
+  }
+  return id;
+}
+
+const getItems = (requestId) => db('order_items').where({ meal_request_id: requestId }).orderBy('id');
+
+// Attach line items to a list of request rows in one query.
+async function withItems(rows) {
+  const ids = rows.map((r) => r.id);
+  if (!ids.length) return rows;
+  const items = await db('order_items').whereIn('meal_request_id', ids).orderBy('id');
+  const byReq = {};
+  items.forEach((it) => {
+    (byReq[it.meal_request_id] = byReq[it.meal_request_id] || []).push(it);
+  });
+  return rows.map((r) => ({ ...r, items: byReq[r.id] || [] }));
+}
+
+async function getRequest(id) {
+  const row = await db('meal_requests as mr')
     .leftJoin('meals as m', 'm.id', 'mr.meal_id')
     .where('mr.id', id)
     .first('mr.*', 'm.name_en', 'm.name_ar', 'm.emoji', 'm.price');
+  if (!row) return row;
+  row.items = await getItems(id);
+  return row;
+}
 
-function kitchenRequests() {
-  // each request + its latest budget
+async function kitchenRequests() {
   const latest = db('budget_requests')
     .select('meal_request_id')
     .max('id as bid')
     .groupBy('meal_request_id')
     .as('lb');
-  return db('meal_requests as mr')
+  const rows = await db('meal_requests as mr')
     .leftJoin('meals as m', 'm.id', 'mr.meal_id')
     .leftJoin(latest, 'lb.meal_request_id', 'mr.id')
     .leftJoin('budget_requests as b', 'b.id', 'lb.bid')
@@ -74,21 +109,23 @@ function kitchenRequests() {
       'b.id as budget_id', 'b.amount', 'b.currency', 'b.vendor',
       'b.attachment_path', 'b.notes as budget_notes'
     );
+  return withItems(rows);
 }
 
 const setStatus = (id, status) => db('meal_requests').where({ id }).update({ status });
 const updateRequest = (id, fields) => db('meal_requests').where({ id }).update(fields);
 
 // requests for a single employee (their own), newest first, with latest budget
-function requestsByEmail(email) {
+async function requestsByEmail(email) {
   const latest = db('budget_requests').select('meal_request_id').max('id as bid').groupBy('meal_request_id').as('lb');
-  return db('meal_requests as mr')
+  const rows = await db('meal_requests as mr')
     .leftJoin('meals as m', 'm.id', 'mr.meal_id')
     .leftJoin(latest, 'lb.meal_request_id', 'mr.id')
     .leftJoin('budget_requests as b', 'b.id', 'lb.bid')
     .whereRaw('LOWER(mr.requester_email) = ?', [String(email || '').toLowerCase()])
     .orderBy('mr.created_at', 'desc')
     .select('mr.*', 'm.name_en', 'm.name_ar', 'm.emoji', 'b.amount', 'b.currency', 'b.attachment_path');
+  return withItems(rows);
 }
 
 // ── budgets ────────────────────────────────────────────
@@ -114,6 +151,8 @@ module.exports = {
   listMeals,
   getMeal,
   createMealRequest,
+  createOrder,
+  getItems,
   getRequest,
   kitchenRequests,
   requestsByEmail,

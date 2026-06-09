@@ -103,6 +103,25 @@ function detailsTable(rows) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid ${BRAND.greige};border-radius:12px;overflow:hidden;background:${BRAND.paper};">${body}</table>`;
 }
 
+// Cart line items: meal + quantity (the precise order).
+function itemsTable(items) {
+  if (!items || !items.length) return '';
+  const rows = items
+    .map(
+      (it) => `
+      <tr>
+        <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};font-size:14px;color:${BRAND.ink};">${it.special ? '📝 ' : (it.emoji ? it.emoji + ' ' : '')}${it.meal_name}</td>
+        <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};font-size:15px;font-weight:900;color:${BRAND.orangeDark};text-align:center;width:80px;">× ${it.quantity}</td>
+      </tr>`
+    )
+    .join('');
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid ${BRAND.greige};border-radius:12px;overflow:hidden;background:${BRAND.paper};">
+    <tr><td style="background:${BRAND.paperSoft};padding:10px 14px;font-size:12px;font-weight:800;color:${BRAND.inkSoft};">الصنف · Item</td>
+        <td style="background:${BRAND.paperSoft};padding:10px 14px;font-size:12px;font-weight:800;color:${BRAND.inkSoft};text-align:center;">الكمية · Qty</td></tr>
+    ${rows}
+  </table>`;
+}
+
 function totalBox(label, value) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr>
     <td style="background:${BRAND.goldLight};border-radius:12px;padding:14px 18px;" dir="rtl">
@@ -183,8 +202,8 @@ function budgetApprovedTemplate(req) {
     chip: 'تم الاعتماد · Approved',
     chipColor: BRAND.emerald,
     title: 'تم اعتماد الموازنة',
-    intro: 'اتعمدت الموازنة، والمطبخ بدأ تجهيز طلبك وتسجيله في SAP.<br>Budget approved — the kitchen is preparing your order.',
-    content: detailsTable(rows)
+    intro: 'تم اعتماد الموازنة، والمطبخ بدأ تجهيز طلبك. 🧑‍🍳<br>Your budget is approved — the kitchen is now preparing your order.',
+    content: itemsTable(req.items) || detailsTable(rows)
   });
 }
 
@@ -224,12 +243,10 @@ function newRequestTemplate(req) {
     ['مقدّم الطلب', 'Requester', `${req.requester_name}<br><span style="color:${BRAND.inkSoft};font-weight:400;font-size:12px;">${req.requester_email}</span>`],
     ['الإدارة', 'Department', req.department],
     ['التليفون', 'Phone', req.phone],
-    ['الوجبة', 'Meal', mealLabel(req)],
-    ['عدد الأفراد', 'People', req.people],
+    ['إجمالي الكمية', 'Total qty', req.people],
     ['التاريخ المطلوب', 'Needed on', req.needed_date || 'في أقرب وقت / ASAP'],
     ['وقت الاستلام', 'Delivery time', req.needed_time],
-    ['ملاحظات', 'Notes', req.notes],
-    ['طلب خاص', 'Special request', req.special_request]
+    ['ملاحظات', 'Notes', req.notes]
   ];
   const urgentBanner = req.urgent
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;"><tr>
@@ -243,8 +260,8 @@ function newRequestTemplate(req) {
     chip: req.urgent ? 'عاجل · Urgent' : 'طلب جديد · New order',
     chipColor: req.urgent ? BRAND.melon : BRAND.orange,
     title: 'طلب وجبة جديد للمطبخ',
-    intro: 'وصل طلب جديد ومحتاج تجهيز ميزانية ومرفق.<br>A new request needs a budget + attachment.',
-    content: urgentBanner + detailsTable(rows)
+    intro: 'وصل طلب جديد بالأصناف والكميات التالية.<br>A new order with the items below.',
+    content: urgentBanner + itemsTable(req.items) + `<div style="height:14px"></div>` + detailsTable(rows)
   });
 }
 
@@ -252,12 +269,9 @@ function newRequestTemplate(req) {
 function requestConfirmationTemplate(req) {
   const rows = [
     ['رقم الطلب', 'Request #', `#${req.id}`],
-    ['الوجبة', 'Meal', mealLabel(req)],
-    ['عدد الأفراد', 'People', req.people],
     ['التاريخ المطلوب', 'Needed on', req.needed_date || 'في أقرب وقت / ASAP'],
     ['وقت الاستلام', 'Delivery time', req.needed_time],
-    ['ملاحظات', 'Notes', req.notes],
-    ['طلب خاص', 'Special request', req.special_request]
+    ['ملاحظات', 'Notes', req.notes]
   ];
   return layout({
     emoji: '✅',
@@ -265,8 +279,8 @@ function requestConfirmationTemplate(req) {
     chip: 'تم الاستلام · Received',
     chipColor: BRAND.emerald,
     title: 'تأكيد طلبك',
-    intro: `أهلاً ${req.requester_name || ''}، استلمنا طلبك ووصل للمطبخ 🧑‍🍳<br>We got your order and sent it to the kitchen.`,
-    content: detailsTable(rows)
+    intro: `أهلاً ${req.requester_name || ''}، استلمنا طلبك ووصل للمطبخ 🧑‍🍳<br>We got your order — here's what you asked for.`,
+    content: itemsTable(req.items) + `<div style="height:14px"></div>` + detailsTable(rows)
   });
 }
 
@@ -304,7 +318,7 @@ function readyTemplate(req) {
     chip: 'جاهز · Ready',
     chipColor: BRAND.emerald,
     title: 'طلبك جاهز!',
-    intro: 'طلبك اتجهّز وتسجّل كـ Sales Order في SAP.<br>Your order is ready and recorded in SAP.',
+    intro: 'طلبك اتجهّز. بالهنا والشفا! 🍽️<br>Your order is ready. Enjoy!',
     content: detailsTable(rows)
   });
 }
