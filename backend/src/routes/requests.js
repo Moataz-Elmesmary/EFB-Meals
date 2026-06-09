@@ -15,7 +15,7 @@ router.get('/meals', async (req, res) => {
 
 // Create a meal request — either pick a meal OR send a special request.
 router.post('/request', async (req, res) => {
-  const { requester_name, requester_email, department, meal_id, special_request, people, needed_date } = req.body;
+  const { requester_name, requester_email, department, phone, meal_id, special_request, people, needed_date } = req.body;
 
   if (!requester_name || !requester_email) {
     return res.status(400).json({ error: 'Requester name and email are required.' });
@@ -38,6 +38,7 @@ router.post('/request', async (req, res) => {
       requester_name,
       requester_email,
       department: department || '',
+      phone: phone || '',
       meal_id: isSpecial ? null : meal_id,
       meal_name: mealName,
       is_special: isSpecial,
@@ -47,7 +48,7 @@ router.post('/request', async (req, res) => {
     });
 
     const reqRow = {
-      id, requester_name, requester_email, department, meal_id,
+      id, requester_name, requester_email, department, phone, meal_id,
       meal_name: mealName, is_special: isSpecial, special_request, people: headcount, needed_date
     };
     email

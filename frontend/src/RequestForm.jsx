@@ -10,9 +10,6 @@ export default function RequestForm({ meals, user }) {
   const [mode, setMode] = useState('menu'); // 'menu' | 'special'
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [form, setForm] = useState({
-    requester_name: user?.name || '',
-    requester_email: user?.email || user?.username || '',
-    department: '',
     people: 1,
     needed_date: '',
     special_request: ''
@@ -34,6 +31,10 @@ export default function RequestForm({ meals, user }) {
     try {
       await createRequest({
         ...form,
+        requester_name: user?.name || '',
+        requester_email: user?.email || '',
+        department: user?.department || '',
+        phone: user?.phone || '',
         meal_id: mode === 'menu' ? selectedMeal.id : null,
         special_request: mode === 'special' ? form.special_request : ''
       });
@@ -83,20 +84,22 @@ export default function RequestForm({ meals, user }) {
         )}
       </AnimatePresence>
 
+      {/* Identity is read automatically from the signed-in Microsoft account */}
+      <div className="identity-card">
+        <span className="avatar lg">{(user?.name || user?.email || '?')[0].toUpperCase()}</span>
+        <div className="identity-info">
+          <div className="identity-name">{user?.name}</div>
+          <div className="identity-meta">
+            <span>✉️ {user?.email}</span>
+            {user?.department ? <span>🏢 {user.department}</span> : null}
+            {user?.phone ? <span>📞 {user.phone}</span> : null}
+          </div>
+        </div>
+        <span className="identity-tag">{t('orderingAs')}</span>
+      </div>
+
       <form onSubmit={submit} className="panel">
         <div className="form-grid">
-          <div className="field">
-            <label>{t('nameLabel')}</label>
-            <input value={form.requester_name} onChange={(e) => set('requester_name', e.target.value)} required />
-          </div>
-          <div className="field">
-            <label>{t('emailLabel')}</label>
-            <input type="email" value={form.requester_email} onChange={(e) => set('requester_email', e.target.value)} required />
-          </div>
-          <div className="field">
-            <label>{t('deptLabel')}</label>
-            <input value={form.department} placeholder={t('deptPlaceholder')} onChange={(e) => set('department', e.target.value)} />
-          </div>
           <div className="field">
             <label>{t('dateLabel')}</label>
             <input type="date" value={form.needed_date} onChange={(e) => set('needed_date', e.target.value)} />

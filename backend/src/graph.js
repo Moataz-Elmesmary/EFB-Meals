@@ -66,4 +66,24 @@ async function graphSendMail(from, to, subject, html) {
   return { sent: true };
 }
 
-module.exports = { GRAPH_ENABLED, graphSendMail };
+// Fetch an employee profile from Active Directory via Graph (app-only).
+// Requires the User.Read.All Application permission + admin consent.
+async function graphGetUser(email) {
+  const token = await getAppToken();
+  const select = 'displayName,mail,userPrincipalName,department,jobTitle,mobilePhone,businessPhones';
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(email)}?$select=${select}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error(`Graph getUser ${res.status}: ${await res.text()}`);
+  const g = await res.json();
+  return {
+    name: g.displayName || null,
+    email: g.mail || g.userPrincipalName || email,
+    department: g.department || '',
+    jobTitle: g.jobTitle || '',
+    phone: g.mobilePhone || (g.businessPhones && g.businessPhones[0]) || ''
+  };
+}
+
+module.exports = { GRAPH_ENABLED, graphSendMail, graphGetUser };

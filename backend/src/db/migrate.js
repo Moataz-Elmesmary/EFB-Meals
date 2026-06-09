@@ -42,10 +42,15 @@ async function migrate() {
       t.string('special_request', 1000);
       t.integer('people').defaultTo(1);
       t.string('needed_date', 20);
+      t.string('phone', 40);
       t.string('status', 30).defaultTo('requested').index(); // requested|budget_requested|ready_for_sap
       t.timestamp('created_at').defaultTo(db.fn.now());
     });
     console.log('✓ created table: meal_requests');
+  } else if (!(await db.schema.hasColumn('meal_requests', 'phone'))) {
+    // additive migration for existing databases
+    await db.schema.alterTable('meal_requests', (t) => t.string('phone', 40));
+    console.log('✓ added column: meal_requests.phone');
   }
 
   if (!(await db.schema.hasTable('budget_requests'))) {

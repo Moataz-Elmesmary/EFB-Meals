@@ -61,6 +61,7 @@ function newRequestTemplate(req) {
     detailRow('رقم الطلب', 'Request #', `#${req.id}`),
     detailRow('مقدّم الطلب', 'Requester', `${req.requester_name} (${req.requester_email})`),
     detailRow('الإدارة', 'Department', req.department),
+    detailRow('التليفون', 'Phone', req.phone),
     detailRow('الوجبة', 'Meal', mealLabel(req)),
     detailRow('عدد الأفراد', 'People', req.people),
     detailRow('التاريخ المطلوب', 'Needed on', req.needed_date),

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const { GRAPH_ENABLED, graphGetUser } = require('../graph');
 
 const clientId = process.env.AZURE_CLIENT_ID;
 const tenantId = process.env.AZURE_TENANT_ID;
 const azureEnabled = Boolean(clientId && tenantId);
 
-// Frontend reads this on boot to decide whether to use real Microsoft SSO
-// or the local demo sign-in fallback.
+// Frontend reads this on boot to decide real Microsoft SSO vs demo sign-in.
 router.get('/config', (req, res) => {
   res.json({ azureEnabled, clientId: clientId || null, tenantId: tenantId || null });
 });
@@ -18,22 +18,32 @@ function nameFromEmail(email) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Enrich a base profile with department/jobTitle/phone from Active Directory.
+async function enrich(email, fallbackName) {
+  const base = { email, name: fallbackName || nameFromEmail(email || 'user'), department: '', jobTitle: '', phone: '' };
+  if (GRAPH_ENABLED && email) {
+    try {
+      const g = await graphGetUser(email);
+      return { ...base, ...g, name: g.name || base.name, email: g.email || base.email };
+    } catch (e) {
+      console.warn('Graph profile lookup failed:', e.message);
+    }
+  }
+  return base;
+}
+
 if (azureEnabled) {
-  // Real SSO: verify the Microsoft ID token (Bearer) then return the profile.
   const auth = require('../auth');
-  router.get('/me', auth, (req, res) => {
+  router.get('/me', auth, async (req, res) => {
     const u = req.user || {};
-    res.json({
-      email: u.preferred_username || u.email || u.upn || null,
-      name: u.name || u.preferred_username || 'User'
-    });
+    const email = u.preferred_username || u.email || u.upn || null;
+    res.json(await enrich(email, u.name));
   });
 } else {
-  // Demo mode: the browser sends the chosen email in X-Demo-Email.
-  router.get('/me', (req, res) => {
+  router.get('/me', async (req, res) => {
     const email = req.header('X-Demo-Email');
     if (!email) return res.status(401).json({ error: 'Not signed in' });
-    res.json({ email, name: nameFromEmail(email), demo: true });
+    res.json({ ...(await enrich(email)), demo: true });
   });
 }
 

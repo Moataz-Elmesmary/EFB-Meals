@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import RequestForm from './RequestForm';
 import KitchenDashboard from './components/KitchenDashboard';
+import ReportsPage from './components/ReportsPage';
 import LoginGate from './components/LoginGate';
 import BootSplash from './components/BootSplash';
 import AuroraBackground from './components/AuroraBackground';
@@ -92,13 +93,14 @@ export default function App() {
       <header className="topbar">
         <div className="container topbar-inner">
           <div className="brand">
-            <img className="brand-logo" src="/LOGO.png" alt="EFB" />
+            <img className="brand-logo" src="/logo-dark.jpg" alt="بنك الطعام المصري" />
             <div>EFB Meals<small>{t('brandSub')}</small></div>
           </div>
           <div className="spacer" />
           <nav className="nav-tabs">
             <button className={`nav-tab ${view === 'request' ? 'active' : ''}`} onClick={() => setView('request')}>{t('navRequest')}</button>
             <button className={`nav-tab ${view === 'kitchen' ? 'active' : ''}`} onClick={() => setView('kitchen')}>{t('navKitchen')}</button>
+            <button className={`nav-tab ${view === 'reports' ? 'active' : ''}`} onClick={() => setView('reports')}>{t('navReports')}</button>
           </nav>
           <button className="lang-btn" onClick={() => i18n.changeLanguage(ar ? 'en' : 'ar')}>{ar ? 'EN' : 'عربي'}</button>
           <div className="user-chip" title={user.email}>
@@ -184,8 +186,10 @@ export default function App() {
 
           <Marquee items={marqueeItems} reverse />
         </>
-      ) : (
+      ) : view === 'kitchen' ? (
         <KitchenDashboard />
+      ) : (
+        <ReportsPage />
       )}
 
       <footer className="page-footer">{t('footer')}</footer>

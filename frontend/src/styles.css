@@ -237,6 +237,27 @@ a { color: inherit; }
 .file-drop:hover { border-color: var(--orange); color: var(--orange-dark); background: #fff; }
 .file-drop.has-file { border-style: solid; border-color: var(--success); color: var(--success); }
 
+/* ---------- Identity card (auto from Microsoft) ---------- */
+.identity-card { display: flex; align-items: center; gap: 14px; background: var(--emerald-50); border: 1px solid var(--emerald-100); border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 18px; position: relative; }
+.avatar.lg { width: 48px; height: 48px; font-size: 1.1rem; }
+.identity-info { flex: 1; min-width: 0; }
+.identity-name { font-weight: 800; font-size: 1.02rem; }
+.identity-meta { color: var(--ink-3); font-size: .85rem; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.identity-tag { font-size: .72rem; font-weight: 800; color: var(--emerald); background: #fff; border: 1px solid var(--emerald-100); padding: 4px 10px; border-radius: var(--radius-full); white-space: nowrap; }
+
+/* ---------- Reports table ---------- */
+.report-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+.report-toolbar input, .report-toolbar select { min-height: 42px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 8px 12px; background: #fff; }
+.report-toolbar .grow { flex: 1; min-width: 180px; }
+.table-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+table.report { width: 100%; border-collapse: collapse; font-size: .9rem; }
+table.report th { text-align: start; padding: 13px 14px; background: var(--paper-3); color: var(--ink-3); font-weight: 800; white-space: nowrap; border-bottom: 1px solid var(--border); }
+table.report td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table.report tr:last-child td { border-bottom: none; }
+table.report tr:hover td { background: var(--paper-2); }
+.dl-link { color: var(--emerald); font-weight: 700; text-decoration: none; }
+.dl-link:hover { text-decoration: underline; }
+
 /* ---------- Alerts ---------- */
 .alert { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-radius: var(--radius); font-weight: 700; }
 .alert-success { background: var(--emerald-50); color: var(--emerald); }
