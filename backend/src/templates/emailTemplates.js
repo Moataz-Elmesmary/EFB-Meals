@@ -1,128 +1,199 @@
-// Branded, bilingual (AR + EN) HTML email templates for EFB Meals.
-// Colours mirror the EFB Fleet design system: emerald + orange + gold.
+// ============================================================
+// EFB Meals — branded HTML email templates.
+// Table-based layout (renders in Outlook/iOS), inline base64 logo, EFB palette
+// with a warm, appetizing food accent band.
+// ============================================================
+const fs = require('fs');
+const path = require('path');
 
 const BRAND = {
   emerald: '#085648',
   emerald700: '#0a6a59',
+  sapling: '#70C16F',
   orange: '#FF6300',
+  orangeDark: '#d65300',
   gold: '#D1B671',
+  goldLight: '#f0e2bf',
+  melon: '#CC4948',
   ink: '#0e1f1c',
-  ink3: '#56706a',
+  inkSoft: '#56706a',
   paper: '#ffffff',
-  paper3: '#f5f7f5',
-  border: '#e3e8e6'
+  paperSoft: '#f5f7f5',
+  greige: '#e3e8e6'
 };
 
-function shell(title, bodyHtml) {
+// Embed the logo once so it renders without VPN / hosted assets.
+const LOGO_DATA_URI = (() => {
+  for (const name of ['logo.jpg', 'logo.png']) {
+    const p = path.join(__dirname, '..', 'assets', name);
+    if (fs.existsSync(p)) {
+      const mime = name.endsWith('.png') ? 'image/png' : 'image/jpeg';
+      return `data:${mime};base64,${fs.readFileSync(p).toString('base64')}`;
+    }
+  }
+  return '';
+})();
+
+// ── shared layout ──────────────────────────────────────────
+function layout({ emoji, accent = BRAND.orange, chip, chipColor = BRAND.emerald, title, intro, content, footerNote = 'بريد تلقائي · لا ترد عليه · Automated message' }) {
   return `<!doctype html>
-<html dir="rtl" lang="ar">
-<body style="margin:0;background:${BRAND.paper3};font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:${BRAND.ink};">
-  <div style="max-width:600px;margin:0 auto;padding:24px;">
-    <div style="background:linear-gradient(135deg,${BRAND.emerald} 0%,${BRAND.emerald700} 100%);border-radius:20px 20px 0 0;padding:28px 28px 24px;text-align:center;">
-      <div style="font-size:34px;line-height:1;margin-bottom:8px;">🍽️</div>
-      <div style="color:#fff;font-size:20px;font-weight:800;letter-spacing:.3px;">EFB Meals</div>
-      <div style="color:#d6ebe5;font-size:13px;margin-top:4px;">طلبات المطبخ الذكي · Smart Kitchen Requests</div>
-    </div>
-    <div style="background:${BRAND.paper};border:1px solid ${BRAND.border};border-top:none;border-radius:0 0 20px 20px;padding:28px;">
-      <h2 style="margin:0 0 16px;font-size:18px;color:${BRAND.emerald};">${title}</h2>
-      ${bodyHtml}
-    </div>
-    <p style="text-align:center;color:${BRAND.ink3};font-size:12px;margin:18px 0 0;">
-      EFB Meals · هذه رسالة آلية، برجاء عدم الرد · This is an automated message
-    </p>
-  </div>
-</body>
-</html>`;
-}
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
+</head>
+<body style="margin:0;padding:0;background:${BRAND.paperSoft};font-family:'Segoe UI','Segoe UI Arabic',Tahoma,Arial,sans-serif;color:${BRAND.ink};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${BRAND.paperSoft};">
+<tr><td style="padding:36px 16px;" align="center">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:${BRAND.paper};border-radius:18px;overflow:hidden;border:1px solid ${BRAND.greige};box-shadow:0 12px 40px rgba(8,30,28,.08);">
 
-function pill(text, color) {
-  return `<span style="display:inline-block;background:${color}1a;color:${color};border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;">${text}</span>`;
-}
+  <!-- Header: emerald with logo -->
+  <tr><td bgcolor="${BRAND.emerald}" style="background:${BRAND.emerald};padding:20px 28px;" dir="rtl">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+      <td style="vertical-align:middle;width:56px;">
+        <img src="${LOGO_DATA_URI}" alt="بنك الطعام المصري" width="44" height="44" style="display:block;border:0;background:#fff;border-radius:10px;padding:4px;object-fit:contain;">
+      </td>
+      <td style="vertical-align:middle;padding-inline-start:14px;">
+        <div style="font-size:16px;font-weight:800;color:#fff;">بنك الطعام المصري · EFB Meals</div>
+        <div style="font-size:11px;color:#cfe3dc;letter-spacing:1px;margin-top:3px;">طلبات المطبخ الذكي · Smart Kitchen</div>
+      </td>
+    </tr></table>
+  </td></tr>
 
-function detailRow(labelAr, labelEn, value) {
-  return `<tr>
-    <td style="padding:10px 0;border-bottom:1px solid ${BRAND.border};color:${BRAND.ink3};font-size:13px;width:42%;">${labelAr} <span style="opacity:.6">/ ${labelEn}</span></td>
-    <td style="padding:10px 0;border-bottom:1px solid ${BRAND.border};font-size:14px;font-weight:700;">${value || '—'}</td>
-  </tr>`;
+  <!-- Appetizing accent band with the email's food emoji -->
+  <tr><td align="center" style="background:linear-gradient(135deg,${accent},${BRAND.gold});padding:24px;font-size:46px;line-height:1;">${emoji}</td></tr>
+
+  <!-- Chip + title -->
+  <tr><td style="padding:24px 30px 4px 30px;" dir="rtl" align="center">
+    <div style="display:inline-block;background:${chipColor};padding:6px 14px;border-radius:99px;font-size:11px;font-weight:800;color:#fff;letter-spacing:.6px;">${chip}</div>
+    <h2 style="margin:14px 0 0 0;font-size:20px;font-weight:900;color:${BRAND.emerald};line-height:1.4;">${title}</h2>
+  </td></tr>
+
+  <!-- Intro -->
+  ${intro ? `<tr><td style="padding:10px 30px 4px 30px;color:${BRAND.inkSoft};font-size:14px;line-height:1.8;" dir="rtl" align="center">${intro}</td></tr>` : ''}
+
+  <!-- Body -->
+  <tr><td style="padding:16px 30px 26px 30px;" dir="rtl">${content}</td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:${BRAND.paperSoft};padding:16px 30px;border-top:1px solid ${BRAND.greige};" dir="rtl">
+    <span style="font-size:11px;font-weight:800;color:${BRAND.emerald};">بنك الطعام المصري — EFB Meals</span>
+    <span style="font-size:11px;color:#9aa8a3;"> · ${footerNote}</span>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>`;
 }
 
 function detailsTable(rows) {
-  return `<table role="presentation" style="width:100%;border-collapse:collapse;margin:8px 0 4px;">${rows.join('')}</table>`;
+  const body = rows
+    .filter((r) => r && r[2] != null && r[2] !== '')
+    .map(
+      ([ar, en, val]) => `
+      <tr>
+        <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};color:${BRAND.inkSoft};font-size:13px;width:42%;">${ar} <span style="opacity:.55">/ ${en}</span></td>
+        <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};font-size:14px;font-weight:700;color:${BRAND.ink};">${val}</td>
+      </tr>`
+    )
+    .join('');
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid ${BRAND.greige};border-radius:12px;overflow:hidden;background:${BRAND.paper};">${body}</table>`;
 }
 
-function mealLabel(req) {
-  if (req.is_special) return `طلب خاص / Special request`;
-  return req.meal_name || `#${req.meal_id}`;
+function totalBox(label, value) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr>
+    <td style="background:${BRAND.goldLight};border-radius:12px;padding:14px 18px;" dir="rtl">
+      <span style="font-size:13px;color:${BRAND.orangeDark};font-weight:700;">${label}</span>
+      <span style="float:left;font-size:18px;font-weight:900;color:${BRAND.orangeDark};">${value}</span>
+    </td></tr></table>`;
 }
 
-// 1) New request → sent to the kitchen
+const money = (v) => (v == null ? '—' : `${Number(v).toLocaleString()} EGP`);
+const mealLabel = (r) => (r.is_special ? 'طلب خاص / Special request' : r.meal_name || `#${r.meal_id}`);
+
+// 1) New request → kitchen
 function newRequestTemplate(req) {
   const rows = [
-    detailRow('رقم الطلب', 'Request #', `#${req.id}`),
-    detailRow('مقدّم الطلب', 'Requester', `${req.requester_name} (${req.requester_email})`),
-    detailRow('الإدارة', 'Department', req.department),
-    detailRow('التليفون', 'Phone', req.phone),
-    detailRow('الوجبة', 'Meal', mealLabel(req)),
-    detailRow('عدد الأفراد', 'People', req.people),
-    detailRow('التاريخ المطلوب', 'Needed on', req.needed_date),
-    detailRow('طلب خاص', 'Special request', req.special_request)
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['مقدّم الطلب', 'Requester', `${req.requester_name}<br><span style="color:${BRAND.inkSoft};font-weight:400;font-size:12px;">${req.requester_email}</span>`],
+    ['الإدارة', 'Department', req.department],
+    ['التليفون', 'Phone', req.phone],
+    ['الوجبة', 'Meal', mealLabel(req)],
+    ['عدد الأفراد', 'People', req.people],
+    ['التاريخ المطلوب', 'Needed on', req.needed_date],
+    ['طلب خاص', 'Special request', req.special_request]
   ];
-  const body = `
-    <p style="margin:0 0 14px;color:${BRAND.ink3};font-size:14px;">وصل طلب وجبة جديد ويحتاج إلى تجهيز ميزانية ومرفق من المطبخ.<br/>A new meal request arrived and needs a budget + attachment from the kitchen.</p>
-    ${pill('طلب جديد · New', BRAND.orange)}
-    ${detailsTable(rows)}`;
-  return shell('طلب وجبة جديد · New Meal Request', body);
+  return layout({
+    emoji: '🍽️',
+    accent: BRAND.orange,
+    chip: 'طلب جديد · New order',
+    chipColor: BRAND.orange,
+    title: 'طلب وجبة جديد للمطبخ',
+    intro: 'وصل طلب جديد ومحتاج تجهيز ميزانية ومرفق.<br>A new request needs a budget + attachment.',
+    content: detailsTable(rows)
+  });
 }
 
-// 2) Budget created → sent to the requester
-function budgetCreatedTemplate(req, budget) {
-  const amount = budget && budget.amount != null ? `${budget.amount} ${budget.currency || 'EGP'}` : '—';
+// 2) Confirmation → requester
+function requestConfirmationTemplate(req, cost) {
   const rows = [
-    detailRow('رقم الطلب', 'Request #', `#${req.id}`),
-    detailRow('الوجبة', 'Meal', mealLabel(req)),
-    detailRow('عدد الأفراد', 'People', req.people),
-    detailRow('الميزانية', 'Budget', amount),
-    detailRow('المورّد', 'Vendor', budget && budget.vendor),
-    detailRow('ملاحظات', 'Notes', budget && budget.notes)
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['الوجبة', 'Meal', mealLabel(req)],
+    ['عدد الأفراد', 'People', req.people],
+    ['سعر الوحدة', 'Unit price', req.is_special ? '—' : money(cost && cost.unitPrice)]
   ];
-  const body = `
-    <p style="margin:0 0 14px;color:${BRAND.ink3};font-size:14px;">قام المطبخ بإنشاء ميزانية لطلبك وأرفق المستند المطلوب.<br/>The kitchen created a budget for your request and attached the required document.</p>
-    ${pill('تم إنشاء الميزانية · Budget ready', BRAND.gold)}
-    ${detailsTable(rows)}`;
-  return shell('تم تجهيز الميزانية · Budget Prepared', body);
+  const total = req.is_special ? '' : totalBox('الإجمالي المبدئي · Estimated total', money(cost && cost.lineTotal));
+  return layout({
+    emoji: '✅',
+    accent: BRAND.sapling,
+    chip: 'تم الاستلام · Received',
+    chipColor: BRAND.emerald,
+    title: 'تأكيد طلبك',
+    intro: `أهلاً ${req.requester_name || ''}، استلمنا طلبك ووصل للمطبخ 🧑‍🍳<br>We got your order and sent it to the kitchen.`,
+    content: detailsTable(rows) + total
+  });
 }
 
-// 3) Request ready / pushed to SAP → sent to the requester
+// 3) Budget created → requester
+function budgetCreatedTemplate(req, budget) {
+  const amount = budget && budget.amount != null ? `${Number(budget.amount).toLocaleString()} ${budget.currency || 'EGP'}` : '—';
+  const rows = [
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['الوجبة', 'Meal', mealLabel(req)],
+    ['عدد الأفراد', 'People', req.people],
+    ['المورّد', 'Vendor', budget && budget.vendor],
+    ['ملاحظات', 'Notes', budget && budget.notes]
+  ];
+  return layout({
+    emoji: '💰',
+    accent: BRAND.gold,
+    chip: 'تم تجهيز الميزانية · Budget ready',
+    chipColor: BRAND.gold,
+    title: 'تم تجهيز ميزانية طلبك',
+    intro: 'جهّز المطبخ الميزانية وأرفق المستند المطلوب.<br>The kitchen prepared the budget and attached the document.',
+    content: detailsTable(rows) + totalBox('الميزانية · Budget', amount)
+  });
+}
+
+// 4) Ready / pushed to SAP → requester
 function readyTemplate(req) {
   const rows = [
-    detailRow('رقم الطلب', 'Request #', `#${req.id}`),
-    detailRow('الوجبة', 'Meal', mealLabel(req)),
-    detailRow('عدد الأفراد', 'People', req.people)
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['الوجبة', 'Meal', mealLabel(req)],
+    ['عدد الأفراد', 'People', req.people]
   ];
-  const body = `
-    <p style="margin:0 0 14px;color:${BRAND.ink3};font-size:14px;">طلبك جاهز وتم تسجيله كـ Sales Order في نظام SAP.<br/>Your request is ready and has been recorded as a Sales Order in SAP.</p>
-    ${pill('جاهز · Ready', BRAND.emerald)}
-    ${detailsTable(rows)}`;
-  return shell('طلبك جاهز · Your Request is Ready', body);
-}
-
-// Confirmation → sent to the requester right after they submit.
-function requestConfirmationTemplate(req, cost) {
-  const money = (v) => (v == null ? '—' : `${Number(v).toLocaleString()} EGP`);
-  const rows = [
-    detailRow('رقم الطلب', 'Request #', `#${req.id}`),
-    detailRow('الوجبة', 'Meal', mealLabel(req)),
-    detailRow('عدد الأفراد', 'People', req.people),
-    detailRow('سعر الوحدة', 'Unit price', req.is_special ? '—' : money(cost && cost.unitPrice)),
-    detailRow('الإجمالي المبدئي', 'Estimated total', req.is_special ? '—' : money(cost && cost.lineTotal)),
-    detailRow('التاريخ المطلوب', 'Needed on', req.needed_date),
-    detailRow('طلب خاص', 'Special request', req.special_request)
-  ];
-  const body = `
-    <p style="margin:0 0 14px;color:${BRAND.ink3};font-size:14px;">استلمنا طلبك ووصل للمطبخ. هنبعتلك تحديث بالميزانية وأول ما يجهز.<br/>We received your request and sent it to the kitchen. You'll get budget & ready updates.</p>
-    ${pill('تم الاستلام · Received', BRAND.emerald)}
-    ${detailsTable(rows)}`;
-  return shell('تأكيد طلبك · Order Confirmation', body);
+  return layout({
+    emoji: '🎉',
+    accent: BRAND.emerald700,
+    chip: 'جاهز · Ready',
+    chipColor: BRAND.emerald,
+    title: 'طلبك جاهز!',
+    intro: 'طلبك اتجهّز وتسجّل كـ Sales Order في SAP.<br>Your order is ready and recorded in SAP.',
+    content: detailsTable(rows)
+  });
 }
 
 module.exports = { newRequestTemplate, budgetCreatedTemplate, readyTemplate, requestConfirmationTemplate };
