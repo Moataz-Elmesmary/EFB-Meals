@@ -95,7 +95,7 @@ function detailsTable(rows) {
     .map(
       ([ar, en, val]) => `
       <tr>
-        <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};color:${BRAND.inkSoft};font-size:13px;width:42%;">${ar} <span style="opacity:.55">/ ${en}</span></td>
+        <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};color:${BRAND.inkSoft};font-size:13px;width:42%;">${ar}&nbsp;&nbsp;<span style="opacity:.5;font-size:12px;">·&nbsp;${en}</span></td>
         <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};font-size:14px;font-weight:700;color:${BRAND.ink};">${val}</td>
       </tr>`
     )
@@ -123,29 +123,39 @@ function newRequestTemplate(req) {
     ['التليفون', 'Phone', req.phone],
     ['الوجبة', 'Meal', mealLabel(req)],
     ['عدد الأفراد', 'People', req.people],
-    ['التاريخ المطلوب', 'Needed on', req.needed_date],
+    ['التاريخ المطلوب', 'Needed on', req.needed_date || 'في أقرب وقت / ASAP'],
+    ['وقت الاستلام', 'Delivery time', req.needed_time],
+    ['ملاحظات', 'Notes', req.notes],
     ['طلب خاص', 'Special request', req.special_request]
   ];
+  const urgentBanner = req.urgent
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;"><tr>
+         <td style="background:#fdecec;border:1px solid ${BRAND.melon};border-radius:12px;padding:12px 16px;color:${BRAND.melon};font-weight:800;font-size:14px;" dir="rtl" align="center">
+           🚨 طلب عاجل — مطلوب اليوم · URGENT — needed today
+         </td></tr></table>`
+    : '';
   return layout({
-    emoji: '🍽️',
-    accent: BRAND.orange,
-    chip: 'طلب جديد · New order',
-    chipColor: BRAND.orange,
+    emoji: req.urgent ? '🚨' : '🍽️',
+    accent: req.urgent ? BRAND.melon : BRAND.orange,
+    chip: req.urgent ? 'عاجل · Urgent' : 'طلب جديد · New order',
+    chipColor: req.urgent ? BRAND.melon : BRAND.orange,
     title: 'طلب وجبة جديد للمطبخ',
     intro: 'وصل طلب جديد ومحتاج تجهيز ميزانية ومرفق.<br>A new request needs a budget + attachment.',
-    content: detailsTable(rows)
+    content: urgentBanner + detailsTable(rows)
   });
 }
 
 // 2) Confirmation → requester
-function requestConfirmationTemplate(req, cost) {
+function requestConfirmationTemplate(req) {
   const rows = [
     ['رقم الطلب', 'Request #', `#${req.id}`],
     ['الوجبة', 'Meal', mealLabel(req)],
     ['عدد الأفراد', 'People', req.people],
-    ['سعر الوحدة', 'Unit price', req.is_special ? '—' : money(cost && cost.unitPrice)]
+    ['التاريخ المطلوب', 'Needed on', req.needed_date || 'في أقرب وقت / ASAP'],
+    ['وقت الاستلام', 'Delivery time', req.needed_time],
+    ['ملاحظات', 'Notes', req.notes],
+    ['طلب خاص', 'Special request', req.special_request]
   ];
-  const total = req.is_special ? '' : totalBox('الإجمالي المبدئي · Estimated total', money(cost && cost.lineTotal));
   return layout({
     emoji: '✅',
     accent: BRAND.sapling,
@@ -153,7 +163,7 @@ function requestConfirmationTemplate(req, cost) {
     chipColor: BRAND.emerald,
     title: 'تأكيد طلبك',
     intro: `أهلاً ${req.requester_name || ''}، استلمنا طلبك ووصل للمطبخ 🧑‍🍳<br>We got your order and sent it to the kitchen.`,
-    content: detailsTable(rows) + total
+    content: detailsTable(rows)
   });
 }
 

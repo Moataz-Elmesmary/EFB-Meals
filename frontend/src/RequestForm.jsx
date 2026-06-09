@@ -12,8 +12,12 @@ export default function RequestForm({ meals, user }) {
   const [form, setForm] = useState({
     people: 1,
     needed_date: '',
+    needed_time: '',
+    notes: '',
     special_request: ''
   });
+  const today = new Date().toISOString().slice(0, 10);
+  const isUrgent = !form.needed_date || form.needed_date === today;
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
 
@@ -40,7 +44,7 @@ export default function RequestForm({ meals, user }) {
       });
       setStatus('success');
       setSelectedMeal(null);
-      setForm((p) => ({ ...p, people: 1, needed_date: '', special_request: '' }));
+      setForm((p) => ({ ...p, people: 1, needed_date: '', needed_time: '', notes: '', special_request: '' }));
       setTimeout(() => setStatus(null), 4000);
     } catch (err) {
       setError(err.response?.data?.error || t('error'));
@@ -102,7 +106,13 @@ export default function RequestForm({ meals, user }) {
         <div className="form-grid">
           <div className="field">
             <label>{t('dateLabel')}</label>
-            <input type="date" value={form.needed_date} onChange={(e) => set('needed_date', e.target.value)} />
+            <input type="date" min={today} value={form.needed_date} onChange={(e) => set('needed_date', e.target.value)} />
+            {isUrgent && <span className="urgent-hint">🚨 {t('urgentHint')}</span>}
+          </div>
+
+          <div className="field">
+            <label>{t('timeLabel')}</label>
+            <input type="time" value={form.needed_time} onChange={(e) => set('needed_time', e.target.value)} />
           </div>
 
           <div className="field">
@@ -158,6 +168,16 @@ export default function RequestForm({ meals, user }) {
               />
             </div>
           )}
+
+          <div className="field full">
+            <label>{t('notesLabel')} <span className="hint">({t('optional')})</span></label>
+            <textarea
+              style={{ minHeight: 80 }}
+              value={form.notes}
+              placeholder={t('notesPlaceholder')}
+              onChange={(e) => set('notes', e.target.value)}
+            />
+          </div>
         </div>
 
         <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>

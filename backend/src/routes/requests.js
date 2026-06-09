@@ -15,7 +15,7 @@ router.get('/meals', async (req, res) => {
 
 // Create a meal request — either pick a meal OR send a special request.
 router.post('/request', async (req, res) => {
-  const { requester_name, requester_email, department, phone, meal_id, special_request, people, needed_date } = req.body;
+  const { requester_name, requester_email, department, phone, meal_id, special_request, people, needed_date, needed_time, notes } = req.body;
 
   if (!requester_name || !requester_email) {
     return res.status(400).json({ error: 'Requester name and email are required.' });
@@ -26,14 +26,16 @@ router.post('/request', async (req, res) => {
   }
   const headcount = Math.max(1, parseInt(people, 10) || 1);
 
+  // Urgent when wanted today (or no date given).
+  const today = new Date().toISOString().slice(0, 10);
+  const urgent = !needed_date || needed_date === today;
+
   try {
     let mealName = null;
-    let unitPrice = null;
     if (!isSpecial) {
       const meal = await dao.getMeal(meal_id);
       if (!meal) return res.status(400).json({ error: 'Selected meal does not exist.' });
       mealName = `${meal.name_en} / ${meal.name_ar}`;
-      unitPrice = meal.price || 0;
     }
 
     const id = await dao.createMealRequest({
@@ -46,12 +48,16 @@ router.post('/request', async (req, res) => {
       is_special: isSpecial,
       special_request: special_request || '',
       people: headcount,
-      needed_date: needed_date || ''
+      needed_date: needed_date || '',
+      needed_time: needed_time || '',
+      urgent,
+      notes: notes || ''
     });
 
     const reqRow = {
       id, requester_name, requester_email, department, phone, meal_id,
-      meal_name: mealName, is_special: isSpecial, special_request, people: headcount, needed_date
+      meal_name: mealName, is_special: isSpecial, special_request, people: headcount,
+      needed_date, needed_time, urgent, notes
     };
     // notify the kitchen
     email
@@ -62,13 +68,12 @@ router.post('/request', async (req, res) => {
       )
       .catch(() => {});
 
-    // confirmation to the requester (with cost details)
-    const cost = isSpecial ? null : { unitPrice, lineTotal: (unitPrice || 0) * headcount };
+    // confirmation to the requester
     email
       .sendNotification(
         requester_email,
         `✅ Order confirmation #${id} — تأكيد طلبك`,
-        requestConfirmationTemplate(reqRow, cost)
+        requestConfirmationTemplate(reqRow)
       )
       .catch(() => {});
 

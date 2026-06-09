@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { getMyRequests, fileUrl } from '../api';
+import { getMyRequests, createRequest, fileUrl } from '../api';
 
 const STEPS = ['requested', 'budget_requested', 'ready_for_sap'];
 
@@ -27,6 +27,25 @@ export default function MyRequests() {
   const mealLabel = (r) => (r.is_special ? t('special') : ar ? r.name_ar : r.name_en);
   const stepIndex = (s) => Math.max(0, STEPS.indexOf(s));
 
+  const [busyId, setBusyId] = useState(null);
+  const reorder = async (r) => {
+    setBusyId(r.id);
+    try {
+      await createRequest({
+        requester_name: r.requester_name,
+        requester_email: r.requester_email,
+        department: r.department,
+        phone: r.phone,
+        meal_id: r.is_special ? null : r.meal_id,
+        special_request: r.is_special ? r.special_request : '',
+        people: r.people,
+        notes: r.notes
+      });
+      await load();
+    } catch (_) {}
+    setBusyId(null);
+  };
+
   return (
     <div className="container section">
       <div className="section-head">
@@ -50,6 +69,7 @@ export default function MyRequests() {
                 <div className="req-main">
                   <div className="req-title">
                     #{r.id} · {mealLabel(r)} <span className={`badge badge-${r.status}`}>{t(`status_${r.status}`)}</span>
+                    {r.urgent ? <span className="badge badge-urgent" style={{ marginInlineStart: 6 }}>🚨 {t('urgent')}</span> : null}
                   </div>
                   <div className="req-meta">
                     <span>👥 {r.people} {t('people')}</span>
@@ -71,11 +91,14 @@ export default function MyRequests() {
                 ))}
               </div>
 
-              {r.attachment_path && (
-                <div className="req-actions">
+              <div className="req-actions">
+                <button className="btn btn-orange btn-sm" onClick={() => reorder(r)} disabled={busyId === r.id}>
+                  {busyId === r.id ? <span className="spinner" /> : '🔁'} {t('reorder')}
+                </button>
+                {r.attachment_path && (
                   <a className="btn btn-ghost btn-sm" href={fileUrl(r.attachment_path)} target="_blank" rel="noreferrer">📎 {t('viewAttachment')}</a>
-                </div>
-              )}
+                )}
+              </div>
             </motion.div>
           ))}
         </div>

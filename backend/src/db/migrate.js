@@ -43,14 +43,25 @@ async function migrate() {
       t.integer('people').defaultTo(1);
       t.string('needed_date', 20);
       t.string('phone', 40);
+      t.string('needed_time', 10);
+      t.boolean('urgent').defaultTo(false);
+      t.string('notes', 1000); // order comment from the requester
       t.string('status', 30).defaultTo('requested').index(); // requested|budget_requested|ready_for_sap
       t.timestamp('created_at').defaultTo(db.fn.now());
     });
     console.log('✓ created table: meal_requests');
-  } else if (!(await db.schema.hasColumn('meal_requests', 'phone'))) {
-    // additive migration for existing databases
-    await db.schema.alterTable('meal_requests', (t) => t.string('phone', 40));
-    console.log('✓ added column: meal_requests.phone');
+  } else {
+    for (const [col, def] of [
+      ['phone', (t) => t.string('phone', 40)],
+      ['needed_time', (t) => t.string('needed_time', 10)],
+      ['urgent', (t) => t.boolean('urgent').defaultTo(false)],
+      ['notes', (t) => t.string('notes', 1000)]
+    ]) {
+      if (!(await db.schema.hasColumn('meal_requests', col))) {
+        await db.schema.alterTable('meal_requests', def);
+        console.log(`✓ added column: meal_requests.${col}`);
+      }
+    }
   }
 
   if (!(await db.schema.hasTable('budget_requests'))) {

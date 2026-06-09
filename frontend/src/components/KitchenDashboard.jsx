@@ -97,6 +97,7 @@ export default function KitchenDashboard() {
                       #{r.id} · {mealLabel(r)}{' '}
                       <span className={`badge badge-${r.status}`}>{t(`status_${r.status}`)}</span>
                       {r.is_special ? <span className="badge badge-special" style={{ marginInlineStart: 6 }}>{t('special')}</span> : null}
+                      {r.urgent ? <span className="badge badge-urgent" style={{ marginInlineStart: 6 }}>🚨 {t('urgent')}</span> : null}
                     </div>
                     <div className="req-meta">
                       <span>👤 {r.requester_name}</span>
