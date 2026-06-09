@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
 
-const db = require('./db');
+const dao = require('./db');
 const sqlListener = require('./sqlListener');
 
 const authRouter = require('./routes/auth');
@@ -38,8 +38,16 @@ if (fs.existsSync(staticPath)) {
 
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Meals backend listening on port ${PORT}`);
-  sqlListener.start();
-});
+dao
+  .init()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Meals backend listening on port ${PORT}`);
+      sqlListener.start();
+    });
+  })
+  .catch((err) => {
+    console.error('DB init failed:', err);
+    process.exit(1);
+  });
 

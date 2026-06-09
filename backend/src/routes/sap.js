@@ -1,14 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const dao = require('../db');
 const { pushRequestToSAP } = require('../sapService');
 
 // Manually (re)push a request to SAP as a Sales Order.
 router.post('/push/:requestId', async (req, res) => {
-  const requestId = parseInt(req.params.requestId, 10);
   try {
-    const result = await pushRequestToSAP(requestId);
-    res.status(201).json(result);
+    res.status(201).json(await pushRequestToSAP(parseInt(req.params.requestId, 10)));
   } catch (e) {
     const code = e.message === 'Request not found' ? 404 : 500;
     res.status(code).json({ error: e.message });
@@ -16,11 +14,12 @@ router.post('/push/:requestId', async (req, res) => {
 });
 
 // Inspect recorded Sales Orders (handy for SAP integration debugging).
-router.get('/orders', (req, res) => {
-  db.all('SELECT * FROM SalesOrder ORDER BY created_at DESC', (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get('/orders', async (req, res) => {
+  try {
+    res.json(await dao.listSalesOrders());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 module.exports = router;

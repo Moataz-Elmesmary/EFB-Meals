@@ -1,75 +1,126 @@
-// Shared SAP push logic: build a Sales Order payload from a meal request,
-// store it locally in SalesOrder, and (optionally) POST it to the SAP endpoint.
-// The MSSQL sqlListener picks up any pending rows for the real SAP table.
-const db = require('./db');
+// ───────────────────────────────────────────────────────────
+// SAP integration — turns a meal request into a Sales Order and pushes it to
+// SAP. Primary path: INSERT into the SAP SQL Server Sales Order table. Optional
+// path: POST to a SAP REST endpoint. A local sales_orders row tracks our side.
+// ───────────────────────────────────────────────────────────
+const mssql = require('mssql');
 const fetch = require('node-fetch');
+const dao = require('./db');
 
-function getRequest(requestId) {
-  return new Promise((resolve, reject) => {
-    db.get(
-      `SELECT mr.*, m.name_en, m.name_ar, m.price
-         FROM MealRequest mr
-         LEFT JOIN Meal m ON m.id = mr.meal_id
-        WHERE mr.id = ?`,
-      [requestId],
-      (err, row) => (err ? reject(err) : resolve(row))
-    );
-  });
-}
+// Dedicated SAP SQL Server connection (separate from the app DB).
+const SAP_DB_ENABLED = !!process.env.SAP_MSSQL_HOST;
+const SAP_TABLE = process.env.SAP_SALESORDER_TABLE || 'SalesOrder';
+const sapConfig = {
+  server: process.env.SAP_MSSQL_HOST || 'localhost',
+  port: parseInt(process.env.SAP_MSSQL_PORT || '1433', 10),
+  user: process.env.SAP_MSSQL_USER || '',
+  password: process.env.SAP_MSSQL_PASS || '',
+  database: process.env.SAP_MSSQL_DB || 'SAP',
+  options: { trustServerCertificate: true, enableArithAbort: true }
+};
 
 function buildPayload(row) {
   const unitPrice = row.price || 0;
   return {
     DocType: 'SalesOrder',
-    requestId: row.id,
-    requester: { name: row.requester_name, email: row.requester_email },
-    department: row.department,
-    meal: row.is_special
-      ? { special: true, description: row.special_request }
-      : { id: row.meal_id, name_en: row.name_en, name_ar: row.name_ar, unitPrice },
-    quantity: row.people,
-    lineTotal: row.is_special ? null : unitPrice * (row.people || 1),
-    neededDate: row.needed_date,
-    status: row.status,
-    createdAt: row.created_at
+    RequestId: row.id,
+    RequesterName: row.requester_name,
+    RequesterEmail: row.requester_email,
+    Department: row.department,
+    MealName: row.is_special ? 'Special request' : row.meal_name || row.name_en,
+    IsSpecial: !!row.is_special,
+    SpecialRequest: row.special_request,
+    Quantity: row.people,
+    UnitPrice: row.is_special ? null : unitPrice,
+    LineTotal: row.is_special ? null : unitPrice * (row.people || 1),
+    NeededDate: row.needed_date,
+    Status: row.status,
+    CreatedAt: row.created_at
   };
 }
 
-// Returns { salesOrderId, pushed }
-async function pushRequestToSAP(requestId) {
-  const row = await getRequest(requestId);
-  if (!row) throw new Error('Request not found');
-
-  const payload = JSON.stringify(buildPayload(row));
-
-  const salesOrderId = await new Promise((resolve, reject) => {
-    db.run(
-      'INSERT INTO SalesOrder (meal_request_id, payload, status) VALUES (?, ?, ?)',
-      [requestId, payload, 'pending'],
-      function (err) {
-        if (err) return reject(err);
-        resolve(this.lastID);
-      }
-    );
-  });
-
-  const sapEndpoint = process.env.SAP_ENDPOINT;
-  if (sapEndpoint) {
-    try {
-      const r = await fetch(sapEndpoint, {
-        method: 'POST',
-        body: payload,
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const text = await r.text();
-      db.run('UPDATE SalesOrder SET sap_id=?, status=? WHERE id=?', [text, 'pushed', salesOrderId]);
-    } catch (e) {
-      // leave as pending; sqlListener / retry will handle it
-      console.error('SAP push failed (will retry):', e.message);
-    }
+// Insert into the SAP SQL Server Sales Order table. Adjust the column mapping to
+// match the real SAP table — keep OUTPUT INSERTED.Id to capture the SAP doc id.
+async function insertIntoSap(p) {
+  let pool;
+  try {
+    pool = await mssql.connect(sapConfig);
+    const result = await pool
+      .request()
+      .input('RequestId', mssql.Int, p.RequestId)
+      .input('Requester', mssql.NVarChar(200), p.RequesterName)
+      .input('Department', mssql.NVarChar(200), p.Department)
+      .input('MealName', mssql.NVarChar(400), p.MealName)
+      .input('Quantity', mssql.Int, p.Quantity)
+      .input('LineTotal', mssql.Decimal(12, 2), p.LineTotal)
+      .input('NeededDate', mssql.NVarChar(20), p.NeededDate)
+      .input('Payload', mssql.NVarChar(mssql.MAX), JSON.stringify(p))
+      .query(
+        `INSERT INTO ${SAP_TABLE} (RequestId, Requester, Department, MealName, Quantity, LineTotal, NeededDate, Payload)
+         OUTPUT INSERTED.Id
+         VALUES (@RequestId, @Requester, @Department, @MealName, @Quantity, @LineTotal, @NeededDate, @Payload)`
+      );
+    const id = result.recordset && result.recordset[0] && result.recordset[0].Id;
+    return id ? String(id) : null;
+  } finally {
+    if (pool) await pool.close();
   }
-
-  return { salesOrderId, pushed: Boolean(sapEndpoint) };
 }
 
-module.exports = { pushRequestToSAP, buildPayload, getRequest };
+async function pushToSapTarget(payload) {
+  if (SAP_DB_ENABLED) return insertIntoSap(payload);
+  if (process.env.SAP_ENDPOINT) {
+    const r = await fetch(process.env.SAP_ENDPOINT, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return (await r.text()) || null;
+  }
+  return null; // not configured — stays pending locally
+}
+
+// Build payload, record locally, attempt push. Returns { salesOrderId, sapId, pushed }.
+async function pushRequestToSAP(requestId) {
+  const row = await dao.getRequest(requestId);
+  if (!row) throw new Error('Request not found');
+
+  const payload = buildPayload(row);
+  const salesOrderId = await dao.createSalesOrder({
+    meal_request_id: requestId,
+    payload: JSON.stringify(payload),
+    status: 'pending'
+  });
+
+  try {
+    const sapId = await pushToSapTarget(payload);
+    if (sapId) {
+      await dao.updateSalesOrder(salesOrderId, { sap_id: sapId, status: 'pushed' });
+      return { salesOrderId, sapId, pushed: true };
+    }
+    return { salesOrderId, sapId: null, pushed: false };
+  } catch (e) {
+    console.error('SAP push failed (will retry):', e.message);
+    await dao.updateSalesOrder(salesOrderId, { status: 'failed' });
+    return { salesOrderId, sapId: null, pushed: false, error: e.message };
+  }
+}
+
+// Retry any sales orders that haven't reached SAP yet (called by sqlListener).
+async function retryPending() {
+  const pending = await dao.db('sales_orders').whereNull('sap_id').whereIn('status', ['pending', 'failed']);
+  for (const so of pending) {
+    try {
+      const payload = JSON.parse(so.payload);
+      const sapId = await pushToSapTarget(payload);
+      if (sapId) {
+        await dao.updateSalesOrder(so.id, { sap_id: sapId, status: 'pushed' });
+        console.log('SAP retry pushed sales order', so.id, '→', sapId);
+      }
+    } catch (e) {
+      console.error('SAP retry failed for', so.id, e.message);
+    }
+  }
+}
+
+module.exports = { pushRequestToSAP, retryPending, buildPayload, SAP_DB_ENABLED };
