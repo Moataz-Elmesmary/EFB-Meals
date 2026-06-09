@@ -412,11 +412,80 @@ a { color: inherit; }
 .topbar { z-index: 50; }
 
 /* ==========================================================================
+   Premium landing — Lenis smooth scroll, display type, parallax, marquee
+   ========================================================================== */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+.accent {
+  background: linear-gradient(118deg, var(--emerald) 0%, var(--emerald-600) 35%, var(--orange) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.display {
+  font-size: clamp(2.7rem, 7vw, 5.8rem); font-weight: 900; line-height: .96;
+  letter-spacing: -2px; margin: 18px 0 18px;
+}
+[dir="rtl"] .display { letter-spacing: -1px; }
+.btn-lg { padding: 16px 32px; font-size: 1.06rem; border-radius: 18px; }
+
+.hero-xl { padding: 78px 0 56px; }
+.hero-xl .hero-grid { align-items: center; min-height: 70vh; }
+
+/* parallax stage */
+.hero-stage { position: relative; height: 460px; display: grid; place-items: center; }
+.hero-orb {
+  position: absolute; width: 420px; height: 420px; border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(8,86,72,.0), rgba(255,99,0,.5), rgba(209,182,113,.55), rgba(13,128,104,.5), rgba(8,86,72,0));
+  filter: blur(40px); opacity: .8;
+}
+.hero-main-img {
+  position: relative; width: clamp(260px, 34vw, 380px); aspect-ratio: 1; border-radius: 40px;
+  overflow: hidden; border: 8px solid #fff; box-shadow: var(--shadow-xl);
+}
+.food-img { width: 100%; height: 100%; overflow: hidden; }
+.food-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.food-img-fallback { width: 100%; height: 100%; display: grid; place-items: center; font-size: 56px; background: radial-gradient(circle at 35% 30%, var(--emerald-100), #fff); }
+
+.food-chip {
+  position: absolute; width: clamp(86px, 11vw, 124px); aspect-ratio: 1; border-radius: 26px; overflow: hidden;
+  border: 5px solid #fff; box-shadow: var(--shadow-lg); z-index: 2;
+}
+.food-chip.c1 { top: 2%; inset-inline-start: 0%; }
+.food-chip.c2 { bottom: 6%; inset-inline-start: 8%; }
+.food-chip.c3 { top: 12%; inset-inline-end: 0%; }
+
+/* marquee */
+.marquee { overflow: hidden; background: var(--emerald); color: var(--emerald-100); padding: 16px 0; border-top: 2px solid rgba(255,255,255,.1); border-bottom: 2px solid rgba(255,255,255,.1); position: relative; z-index: 1; }
+.marquee-track { display: inline-flex; white-space: nowrap; will-change: transform; animation: marquee 30s linear infinite; }
+.marquee-track.rev { animation-direction: reverse; }
+.marquee-item { display: inline-flex; align-items: center; gap: 12px; padding: 0 28px; font-weight: 900; font-size: clamp(1.1rem, 2.2vw, 1.7rem); text-transform: uppercase; letter-spacing: .4px; }
+.marquee-emoji { font-size: 1.5em; }
+.marquee-star { color: var(--gold); }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* how it works */
+.section-head.center { justify-content: center; text-align: center; }
+.section-title.big { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.step { position: relative; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 30px 26px; box-shadow: var(--shadow-sm); overflow: hidden; transition: transform .25s var(--ease-spring), box-shadow .25s; }
+.step:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+.step-emoji { font-size: 46px; }
+.step-no { position: absolute; top: 18px; inset-inline-end: 22px; font-size: 2.4rem; font-weight: 900; color: var(--gold-light); }
+.step h3 { margin: 14px 0 8px; font-size: 1.2rem; font-weight: 800; }
+.step p { margin: 0; color: var(--ink-3); line-height: 1.7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+}
+
+/* ==========================================================================
    Responsive
    ========================================================================== */
 @media (max-width: 920px) {
   .hero-grid { grid-template-columns: 1fr; }
-  .hero-visual { height: 280px; order: -1; }
+  .hero-stage { height: 320px; order: -1; margin-bottom: 8px; }
+  .steps { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .kpis { grid-template-columns: repeat(2, 1fr); }
   .nav-tabs { order: 3; }

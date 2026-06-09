@@ -25,9 +25,23 @@ const resources = {
       heroText: 'Pick from a chef-crafted menu or describe exactly what you crave. Fresh, fast, and made for the whole team.',
       ctaOrder: 'Order now',
       ctaMenu: 'Browse menu',
+      ctaHow: 'How it works',
       statMeals: 'Menu items',
       statFast: 'Fast & fresh',
       statBilingual: 'Arabic & English',
+
+      // marquee
+      m1: 'Grilled & juicy', m2: 'Fresh salads', m3: 'Stone-baked', m4: 'Home-style', m5: 'Sweet treats', m6: 'Hot & fresh',
+
+      // how it works
+      howTitle: 'From craving to table',
+      howSub: 'Three simple steps — that\'s it.',
+      step1Title: 'Pick your meal',
+      step1Text: 'Choose from a chef-crafted menu or describe exactly what your team is craving.',
+      step2Title: 'The kitchen cooks',
+      step2Text: 'Our kitchen prepares everything fresh, in the right quantities, for your whole team.',
+      step3Title: 'Delivered fresh',
+      step3Text: 'Your meals arrive hot and on time, ready to enjoy together.',
 
       // menu
       menuTitle: 'Today\'s Menu',
@@ -118,9 +132,23 @@ const resources = {
       heroText: 'اختر من منيو من إعداد الشيف، أو اكتب بالظبط اللي نفسك فيه. طازة، سريعة، ومتعملة للفريق كله.',
       ctaOrder: 'اطلب دلوقتي',
       ctaMenu: 'تصفّح المنيو',
+      ctaHow: 'إزاي بيشتغل',
       statMeals: 'صنف في المنيو',
       statFast: 'سريع وطازج',
       statBilingual: 'عربي وإنجليزي',
+
+      // marquee
+      m1: 'مشوي وطري', m2: 'سلطات طازة', m3: 'على الحطب', m4: 'زي البيت', m5: 'حلويات', m6: 'سخن وطازج',
+
+      // how it works
+      howTitle: 'من النفس للسفرة',
+      howSub: 'ثلاث خطوات بس — وخلاص.',
+      step1Title: 'اختر وجبتك',
+      step1Text: 'اختر من منيو من إعداد الشيف، أو اكتب بالظبط اللي نفس فريقك فيه.',
+      step2Title: 'المطبخ بيجهّز',
+      step2Text: 'مطبخنا بيحضّر كل حاجة طازة، بالكميات المظبوطة، لفريقك كله.',
+      step3Title: 'يوصل طازج',
+      step3Text: 'وجباتك توصل سخنة وفي وقتها، جاهزة تتستمتعوا بيها سوا.',
 
       menuTitle: 'منيو النهاردة',
       menuSub: 'اختر طبق أو حوّل لطلب خاص',
