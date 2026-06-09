@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import RequestForm from './RequestForm';
 import KitchenDashboard from './components/KitchenDashboard';
 import LoginGate from './components/LoginGate';
-import FluidBackground from './components/FluidBackground';
+import AuroraBackground from './components/AuroraBackground';
 import { getMeals } from './api';
 import { restoreSession, logout } from './auth';
 
@@ -54,7 +54,7 @@ export default function App() {
   if (booting) {
     return (
       <div className="boot">
-        <FluidBackground />
+        <AuroraBackground variant="night" />
         <div className="boot-inner"><span className="dish-spin">🍽️</span></div>
       </div>
     );
@@ -64,7 +64,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <FluidBackground intensity={0.5} className="ambient" />
+      <div className="ambient"><AuroraBackground variant="day" /></div>
 
       <header className="topbar">
         <div className="container topbar-inner">
