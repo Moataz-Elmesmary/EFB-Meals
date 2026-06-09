@@ -326,7 +326,7 @@ a { color: inherit; }
 .app-shell .page-footer { position: relative; z-index: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora-orb, .dish-ring, .dish-plate, .dish-orbitring, .orbit-emoji, .dish-steam path { animation: none !important; }
+  .aurora-orb, .dish-ring, .dish-emblem, .emblem-logo, .dish-orbitring, .orbit-emoji { animation: none !important; }
 }
 
 /* ---------- Boot splash ---------- */
@@ -379,6 +379,15 @@ a { color: inherit; }
 }
 .dish-plate img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .dish-fallback { width: 100%; height: 100%; display: grid; place-items: center; font-size: 110px; background: radial-gradient(circle at 35% 30%, #0d8068, #062a23); }
+/* central glowing EFB emblem */
+.dish-emblem {
+  position: relative; width: 210px; height: 210px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.16), rgba(255,255,255,.04));
+  border: 1px solid rgba(255,255,255,.28); backdrop-filter: blur(10px);
+  box-shadow: 0 30px 70px rgba(0,0,0,.45), inset 0 0 44px rgba(255,255,255,.08);
+}
+.emblem-logo { width: 62%; height: auto; filter: brightness(0) invert(1) drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
+
 .dish-orbitring { position: absolute; inset: 0; --orbit-r: 176px; transform-style: preserve-3d; }
 .orbit-slot { position: absolute; top: 50%; left: 50%; width: 48px; height: 48px; margin: -24px; display: grid; place-items: center; }
 .orbit-emoji { display: inline-block; font-size: 38px; filter: drop-shadow(0 12px 18px rgba(0,0,0,.45)); }
@@ -521,9 +530,8 @@ html.lenis, html.lenis body { height: auto; }
   .login-visual { display: grid; }
   .dish-perspective { width: 260px; height: 260px; }
   .dish-tilt { width: 200px; height: 200px; }
-  .dish-plate { width: 180px; height: 180px; }
+  .dish-emblem { width: 150px; height: 150px; }
   .dish-ring { width: 230px; height: 230px; }
   .dish-orbitring { --orbit-r: 122px; }
   .orbit-emoji { font-size: 28px; }
-  .login-logo { height: 38px; }
 }
