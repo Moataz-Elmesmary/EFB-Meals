@@ -134,16 +134,33 @@ db.serialize(() => {
   // run column migrations on existing databases
   Object.entries(expectedColumns).forEach(([table, cols]) => migrate(table, cols));
 
-  // seed catalog only when empty
-  db.get('SELECT COUNT(*) as cnt FROM Meal', (err, row) => {
-    if (!err && row && row.cnt === 0) {
-      const stmt = db.prepare(
-        'INSERT INTO Meal (name_en, name_ar, description_en, description_ar, category, emoji, price) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      );
-      seedMeals.forEach((m) => stmt.run(m));
-      stmt.finalize(() => console.log(`Seeded ${seedMeals.length} meals`));
+  // Seed the rich catalog when the table is empty, OR when it still holds the
+  // old placeholder skeleton seed (no descriptions/prices). This self-heals dev
+  // databases without touching a real, enriched catalog.
+  const applySeed = () => {
+    const stmt = db.prepare(
+      'INSERT INTO Meal (name_en, name_ar, description_en, description_ar, category, emoji, price) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    );
+    seedMeals.forEach((m) => stmt.run(m));
+    stmt.finalize(() => console.log(`Seeded ${seedMeals.length} meals`));
+  };
+
+  db.get(
+    'SELECT COUNT(*) AS cnt, COUNT(description_en) AS described, MAX(price) AS maxPrice FROM Meal',
+    (err, row) => {
+      if (err || !row) return;
+      const isPlaceholder = row.cnt > 0 && row.described === 0 && (row.maxPrice || 0) === 0;
+      if (row.cnt === 0) return applySeed();
+      if (isPlaceholder) {
+        db.run('DELETE FROM Meal', (e) => {
+          if (!e) {
+            console.log('Replacing placeholder catalog with rich seed');
+            applySeed();
+          }
+        });
+      }
     }
-  });
+  );
 });
 
 module.exports = db;

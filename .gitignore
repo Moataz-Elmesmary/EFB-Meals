@@ -4,3 +4,5 @@ frontend/node_modules/
 backend/data.sqlite
 backend/uploads/
 .env
+
+frontend/dist/
