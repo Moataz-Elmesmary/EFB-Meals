@@ -208,7 +208,11 @@ a { color: inherit; }
 
 /* ---------- Cart ---------- */
 .meal-card .cart-badge { position: absolute; top: 12px; inset-inline-end: 12px; background: var(--orange); color: #fff; font-weight: 900; font-size: .8rem; padding: 3px 10px; border-radius: var(--radius-full); z-index: 2; }
-.add-pill { font-size: .78rem; font-weight: 800; color: var(--orange-dark); background: var(--orange-light); padding: 4px 12px; border-radius: var(--radius-full); }
+.add-pill { font-size: .82rem; font-weight: 800; color: #fff; background: var(--orange); padding: 7px 16px; border-radius: var(--radius-full); box-shadow: var(--shadow-sm); transition: transform .15s; }
+.add-pill:hover { transform: scale(1.05); }
+.qty.card-qty { border-color: var(--emerald); }
+.qty.card-qty button { width: 34px; height: 34px; font-size: 1.2rem; color: var(--emerald); }
+.qty.card-qty .qty-num { min-width: 30px; text-align: center; font-weight: 900; font-size: 1.05rem; }
 .special-add { display: flex; gap: 10px; }
 .special-add input { flex: 1; min-height: 48px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px 15px; background: var(--paper-2); }
 .special-add input:focus { outline: none; border-color: var(--emerald); background: #fff; }

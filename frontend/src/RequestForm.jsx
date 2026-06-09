@@ -15,6 +15,10 @@ export default function RequestForm({ meals, user }) {
 
   const mealOptions = useMemo(() => meals || [], [meals]);
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  const displayName =
+    user?.name && user.name.toLowerCase() !== 'user'
+      ? user.name
+      : (user?.email ? user.email.split('@')[0].replace(/[._-]+/g, ' ') : '');
   const today = new Date().toISOString().slice(0, 10);
   const isUrgent = !form.needed_date || form.needed_date === today;
   const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
@@ -40,6 +44,15 @@ export default function RequestForm({ meals, user }) {
   const setQty = (key, q) => setCart((c) => c.map((x) => (x.key === key ? { ...x, quantity: Math.max(1, q) } : x)));
   const removeItem = (key) => setCart((c) => c.filter((x) => x.key !== key));
   const countOf = (mealId) => cart.find((x) => x.meal_id === mealId)?.quantity || 0;
+  const decMeal = (meal) =>
+    setCart((c) => {
+      const i = c.findIndex((x) => x.meal_id === meal.id);
+      if (i < 0) return c;
+      if (c[i].quantity <= 1) return c.filter((_, idx) => idx !== i);
+      const copy = [...c];
+      copy[i] = { ...copy[i], quantity: copy[i].quantity - 1 };
+      return copy;
+    });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -71,22 +84,21 @@ export default function RequestForm({ meals, user }) {
     <div>
       {/* Identity (auto from Microsoft) */}
       <div className="identity-card">
-        <span className="avatar lg">{(user?.name || user?.email || '?')[0].toUpperCase()}</span>
+        <span className="avatar lg">{(displayName || '?')[0].toUpperCase()}</span>
         <div className="identity-info">
-          <div className="identity-name">{user?.name}</div>
+          <div className="identity-name">👋 {t('hello')} {displayName}</div>
           <div className="identity-meta">
-            <span>✉️ {user?.email}</span>
+            {user?.email ? <span>✉️ {user.email}</span> : null}
             {user?.department ? <span>🏢 {user.department}</span> : null}
             {user?.phone ? <span>📞 {user.phone}</span> : null}
           </div>
         </div>
-        <span className="identity-tag">{t('orderingAs')}</span>
       </div>
 
       {/* Menu */}
       <div className="menu-grid" style={{ marginBottom: 24 }}>
         {mealOptions.map((meal, i) => (
-          <MenuCard key={meal.id} meal={meal} index={i} count={countOf(meal.id)} onSelect={addMeal} />
+          <MenuCard key={meal.id} meal={meal} index={i} count={countOf(meal.id)} onAdd={addMeal} onDec={decMeal} />
         ))}
       </div>
 

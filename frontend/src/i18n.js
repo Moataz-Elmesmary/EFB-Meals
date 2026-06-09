@@ -53,8 +53,8 @@ const resources = {
       m1: 'Grilled & juicy', m2: 'Fresh salads', m3: 'Stone-baked', m4: 'Home-style', m5: 'Sweet treats', m6: 'Hot & fresh',
 
       // how it works
-      howTitle: 'From craving to table',
-      howSub: 'Three simple steps — that\'s it.',
+      howTitle: 'Order in 3 easy steps',
+      howSub: 'Pick, send, enjoy — that\'s it.',
       step1Title: 'Pick your meal',
       step1Text: 'Choose from a chef-crafted menu or describe exactly what your team is craving.',
       step2Title: 'The kitchen cooks',
@@ -77,6 +77,7 @@ const resources = {
       formTitle: 'Create your meal request',
       formSub: 'Tell us who it\'s for and how many people',
       orderingAs: 'Ordering as',
+      hello: 'Hi,',
       timeLabel: 'Delivery time',
       urgentHint: 'Ordered for today — marked URGENT',
       urgent: 'Urgent',
@@ -208,8 +209,8 @@ const resources = {
       m1: 'مشوي وطري', m2: 'سلطات طازة', m3: 'على الحطب', m4: 'زي البيت', m5: 'حلويات', m6: 'سخن وطازج',
 
       // how it works
-      howTitle: 'من النفس للسفرة',
-      howSub: 'ثلاث خطوات بس — وخلاص.',
+      howTitle: 'اطلب في ٣ خطوات',
+      howSub: 'اختار، ابعت، استمتع — وخلاص.',
       step1Title: 'اختر وجبتك',
       step1Text: 'اختر من منيو من إعداد الشيف، أو اكتب بالظبط اللي نفس فريقك فيه.',
       step2Title: 'المطبخ بيجهّز',
@@ -230,6 +231,7 @@ const resources = {
       formTitle: 'أنشئ طلب وجبتك',
       formSub: 'قولنا الطلب لمين وعدد كام فرد',
       orderingAs: 'بتطلب باسم',
+      hello: 'أهلاً',
       timeLabel: 'وقت الاستلام',
       urgentHint: 'مطلوب النهاردة — هيتسجّل عاجل',
       urgent: 'عاجل',
