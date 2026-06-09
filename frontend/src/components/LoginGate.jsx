@@ -175,7 +175,7 @@ export default function LoginGate({ onLogin }) {
           transition={{ delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="login-brand">
-            <span className="brand-badge">🍽️</span>
+            <img className="brand-logo" src="/LOGO.png" alt="EFB" />
             <div>
               EFB Meals
               <small>{t('brandSub')}</small>

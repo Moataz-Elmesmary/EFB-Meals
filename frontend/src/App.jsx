@@ -92,7 +92,7 @@ export default function App() {
       <header className="topbar">
         <div className="container topbar-inner">
           <div className="brand">
-            <div className="brand-badge">🍽️</div>
+            <img className="brand-logo" src="/LOGO.png" alt="EFB" />
             <div>EFB Meals<small>{t('brandSub')}</small></div>
           </div>
           <div className="spacer" />
