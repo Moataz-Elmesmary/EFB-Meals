@@ -23,8 +23,6 @@ export default function LoginGate({ onLogin }) {
   const my = useMotionValue(0);
   const rotX = useSpring(useTransform(my, [-0.5, 0.5], [14, -14]), spring);
   const rotY = useSpring(useTransform(mx, [-0.5, 0.5], [-18, 18]), spring);
-  const gx = useSpring(useTransform(mx, [-0.5, 0.5], [-22, 22]), spring);
-  const gy = useSpring(useTransform(my, [-0.5, 0.5], [-18, 18]), spring);
 
   useEffect(() => {
     loadConfig().then((c) => setAzure(c.azureEnabled)).catch(() => setAzure(false));
@@ -63,12 +61,7 @@ export default function LoginGate({ onLogin }) {
     }
   };
 
-  const chips = [
-    { e: '🍕', cls: 'k1', z: 90 },
-    { e: '🍮', cls: 'k2', z: 130 },
-    { e: '🥗', cls: 'k3', z: 70 },
-    { e: '🌶️', cls: 'k4', z: 110 }
-  ];
+  const orbitEmojis = ['🍕', '🍮', '🥗', '🌶️', '🍗', '🥑'];
 
   return (
     <div className="login-gate" dir={ar ? 'rtl' : 'ltr'} onMouseMove={onMove} onMouseLeave={onLeave}>
@@ -132,23 +125,35 @@ export default function LoginGate({ onLogin }) {
                 </motion.div>
               </motion.div>
 
-              {/* parallax ingredient chips at varying depths */}
-              {chips.map((c, i) => (
-                <motion.span
-                  key={c.e}
-                  className={`dish-chip ${c.cls}`}
-                  style={{ translateZ: c.z }}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1, y: [0, i % 2 ? -10 : 10, 0] }}
-                  transition={{
-                    opacity: { delay: 0.5 + i * 0.1 },
-                    scale: { delay: 0.5 + i * 0.1, type: 'spring', stiffness: 200, damping: 12 },
-                    y: { duration: 4 + i, repeat: Infinity, ease: 'easeInOut' }
-                  }}
-                >
-                  {c.e}
-                </motion.span>
-              ))}
+              {/* ingredients orbiting the plate (mouse tilt adds 3D parallax) */}
+              <motion.div
+                className="dish-orbitring"
+                style={{ translateZ: 60 }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1, rotate: 360 }}
+                transition={{
+                  opacity: { delay: 0.5, duration: 0.6 },
+                  scale: { delay: 0.5, type: 'spring', stiffness: 140, damping: 14 },
+                  rotate: { duration: 22, repeat: Infinity, ease: 'linear' }
+                }}
+              >
+                {orbitEmojis.map((e, i) => (
+                  <span
+                    key={e}
+                    className="orbit-slot"
+                    style={{ transform: `rotate(${(360 / orbitEmojis.length) * i}deg) translateY(calc(var(--orbit-r) * -1))` }}
+                  >
+                    {/* counter-rotate so the emoji stays upright while orbiting */}
+                    <motion.span
+                      className="orbit-emoji"
+                      animate={{ rotate: -360 }}
+                      transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+                    >
+                      {e}
+                    </motion.span>
+                  </span>
+                ))}
+              </motion.div>
             </motion.div>
           </div>
 
@@ -165,7 +170,6 @@ export default function LoginGate({ onLogin }) {
         {/* ---- Sign-in card ---- */}
         <motion.div
           className="login-card glass-dark"
-          style={{ x: gx, y: gy }}
           initial={{ opacity: 0, x: ar ? -40 : 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.25, ease: [0.22, 1, 0.36, 1] }}

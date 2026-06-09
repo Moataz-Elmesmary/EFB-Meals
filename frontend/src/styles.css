@@ -323,7 +323,7 @@ a { color: inherit; }
 .app-shell .page-footer { position: relative; z-index: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora-orb, .dish-ring, .dish-plate, .dish-chip, .dish-steam path { animation: none !important; }
+  .aurora-orb, .dish-ring, .dish-plate, .dish-orbitring, .orbit-emoji, .dish-steam path { animation: none !important; }
 }
 
 /* ---------- Boot splash ---------- */
@@ -376,11 +376,9 @@ a { color: inherit; }
 }
 .dish-plate img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .dish-fallback { width: 100%; height: 100%; display: grid; place-items: center; font-size: 110px; background: radial-gradient(circle at 35% 30%, #0d8068, #062a23); }
-.dish-chip { position: absolute; font-size: 40px; filter: drop-shadow(0 12px 18px rgba(0,0,0,.45)); }
-.dish-chip.k1 { top: -6%; inset-inline-start: -4%; }
-.dish-chip.k2 { top: 8%; inset-inline-end: -8%; }
-.dish-chip.k3 { bottom: -2%; inset-inline-start: -8%; }
-.dish-chip.k4 { bottom: 4%; inset-inline-end: -2%; }
+.dish-orbitring { position: absolute; inset: 0; --orbit-r: 176px; transform-style: preserve-3d; }
+.orbit-slot { position: absolute; top: 50%; left: 50%; width: 48px; height: 48px; margin: -24px; display: grid; place-items: center; }
+.orbit-emoji { display: inline-block; font-size: 38px; filter: drop-shadow(0 12px 18px rgba(0,0,0,.45)); }
 
 /* glass cards */
 .glass {
@@ -522,6 +520,7 @@ html.lenis, html.lenis body { height: auto; }
   .dish-tilt { width: 200px; height: 200px; }
   .dish-plate { width: 180px; height: 180px; }
   .dish-ring { width: 230px; height: 230px; }
-  .dish-chip { font-size: 30px; }
+  .dish-orbitring { --orbit-r: 122px; }
+  .orbit-emoji { font-size: 28px; }
   .login-logo { height: 38px; }
 }
