@@ -4,7 +4,35 @@ const db = require('./knex');
 const migrate = require('./migrate');
 const seed = require('./seed');
 
+// On SQL Server, Knex creates tables but not the database itself. Connect to
+// `master` first and create the target DB if it doesn't exist yet.
+async function ensureDatabaseMssql() {
+  if (db.DB_TYPE !== 'mssql') return;
+  const mssql = require('mssql');
+  const name = process.env.MSSQL_DATABASE || process.env.MSSQL_DB || 'EFBMeals';
+  let pool;
+  try {
+    pool = await mssql.connect({
+      server: process.env.MSSQL_HOST || 'localhost',
+      port: parseInt(process.env.MSSQL_PORT || '1433', 10),
+      user: process.env.MSSQL_USER || '',
+      password: process.env.MSSQL_PASSWORD || process.env.MSSQL_PASS || '',
+      database: 'master',
+      options: {
+        encrypt: process.env.MSSQL_ENCRYPT === 'true',
+        trustServerCertificate: process.env.MSSQL_TRUST_CERT !== 'false',
+        enableArithAbort: true
+      }
+    });
+    await pool.request().query(`IF DB_ID('${name}') IS NULL CREATE DATABASE [${name}]`);
+    console.log(`✓ ensured database ${name}`);
+  } finally {
+    if (pool) await pool.close();
+  }
+}
+
 async function init() {
+  await ensureDatabaseMssql();
   await migrate();
   await seed();
   console.log(`DB ready (${db.DB_TYPE})`);
