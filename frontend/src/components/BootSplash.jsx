@@ -2,15 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import AuroraBackground from './AuroraBackground';
-import Marquee from './Marquee';
 
-const FOODS = [
-  { e: '🍗', t: 'Char-grilled' }, { e: '🥗', t: 'Fresh salads' }, { e: '🍕', t: 'Stone-baked' },
-  { e: '🍛', t: 'Home-style' }, { e: '🍮', t: 'Sweet treats' }, { e: '☕', t: 'Hot & fresh' }
-];
+const FOODS = ['🍅', '🥬', '🧀', '🍗', '🌶️', '🍞', '🍋'];
 
-// Brief loading state: a plate with a fork & spoon spinning, a caption, and the
-// food marquee strip at the bottom.
+// Post-login loader: spinning plate, ingredients popping in, and a filling bar.
 export default function BootSplash() {
   const { t } = useTranslation();
   return (
@@ -18,7 +13,7 @@ export default function BootSplash() {
       <AuroraBackground variant="night" />
       <div className="boot-inner">
         <motion.svg
-          width="120" height="120" viewBox="0 0 120 120" className="boot-plate"
+          width="110" height="110" viewBox="0 0 120 120" className="boot-plate"
           animate={{ rotate: 360 }}
           transition={{ duration: 2.4, repeat: Infinity, ease: 'linear' }}
         >
@@ -36,10 +31,25 @@ export default function BootSplash() {
           <circle cx="60" cy="62" r="34" fill="rgba(255,255,255,.12)" stroke="#fff" strokeWidth="3" />
           <circle cx="60" cy="62" r="22" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="2" />
         </motion.svg>
+
+        <div className="boot-foods">
+          {FOODS.map((f, i) => (
+            <motion.span
+              key={f}
+              initial={{ opacity: 0, y: 26, scale: 0 }}
+              animate={{ opacity: 1, y: [26, -6, 0], scale: 1 }}
+              transition={{ delay: 0.2 + i * 0.14, type: 'spring', stiffness: 240, damping: 12 }}
+            >
+              {f}
+            </motion.span>
+          ))}
+        </div>
+
+        <div className="boot-bar">
+          <motion.span initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 1.6, ease: 'easeInOut' }} />
+        </div>
+
         <div className="boot-text">{t('prep')}</div>
-      </div>
-      <div className="boot-marquee">
-        <Marquee items={FOODS} />
       </div>
     </div>
   );

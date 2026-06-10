@@ -64,7 +64,9 @@ router.post('/request', async (req, res) => {
       needed_date: needed_date || '',
       needed_time: needed_time || '',
       urgent,
-      notes: notes || ''
+      notes: notes || '',
+      // every order needs a budget first — ask the requester to upload it
+      status: 'budget_requested'
     };
 
     const id = await dao.createOrder(header, items);
@@ -88,7 +90,7 @@ router.post('/request', async (req, res) => {
       )
       .catch(() => {});
 
-    res.status(201).json({ id, status: 'requested' });
+    res.status(201).json({ id, status: 'budget_requested' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

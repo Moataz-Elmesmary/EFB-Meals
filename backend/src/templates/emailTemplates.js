@@ -260,7 +260,7 @@ function newRequestTemplate(req) {
     chip: req.urgent ? 'عاجل · Urgent' : 'طلب جديد · New order',
     chipColor: req.urgent ? BRAND.melon : BRAND.orange,
     title: 'طلب وجبة جديد للمطبخ',
-    intro: 'وصل طلب جديد بالأصناف والكميات التالية.<br>A new order with the items below.',
+    intro: 'وصل طلب جديد بالأصناف والكميات التالية. مقدّم الطلب اتطلب منه يرفع الموازنة.<br>A new order — the requester has been asked to upload the budget.',
     content: urgentBanner + itemsTable(req.items) + `<div style="height:14px"></div>` + detailsTable(rows)
   });
 }
@@ -273,14 +273,19 @@ function requestConfirmationTemplate(req) {
     ['وقت الاستلام', 'Delivery time', req.needed_time],
     ['ملاحظات', 'Notes', req.notes]
   ];
+  const budgetNote = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr>
+    <td style="background:${BRAND.goldLight};border-radius:12px;padding:14px 16px;color:${BRAND.gold ? '#8a6d1f' : BRAND.inkSoft};" dir="rtl">
+      <b>الخطوة الجاية:</b> محتاجين موازنة لطلبك. من فضلك ارفع ملف الموازنة (PDF) من صفحة «طلباتي».<br>
+      <span style="opacity:.85">Next: this order needs a budget — upload the PDF from “My Requests”.</span>
+    </td></tr></table>`;
   return layout({
     emoji: '✅',
     accent: BRAND.sapling,
     chip: 'تم الاستلام · Received',
     chipColor: BRAND.emerald,
     title: 'تأكيد طلبك',
-    intro: `أهلاً ${req.requester_name || ''}، استلمنا طلبك ووصل للمطبخ 🧑‍🍳<br>We got your order — here's what you asked for.`,
-    content: itemsTable(req.items) + `<div style="height:14px"></div>` + detailsTable(rows)
+    intro: `أهلاً ${req.requester_name || ''}، استلمنا طلبك 🧑‍🍳<br>We got your order — here's what you asked for.`,
+    content: itemsTable(req.items) + `<div style="height:12px"></div>` + detailsTable(rows) + budgetNote + ctaButton('⬆️ رفع الموازنة · Upload budget', APP_URL, BRAND.orange)
   });
 }
 

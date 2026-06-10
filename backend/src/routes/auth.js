@@ -44,7 +44,9 @@ if (azureEnabled) {
     res.json(await enrich(emailOf(req), u.name));
   });
   router.get('/my-requests', auth, async (req, res) => {
-    res.json(await dao.requestsByEmail(emailOf(req)));
+    // resolve the same canonical email we store on orders (Graph mail)
+    const profile = await enrich(emailOf(req));
+    res.json(await dao.requestsByEmail(profile.email || emailOf(req)));
   });
 } else {
   router.get('/me', async (req, res) => {

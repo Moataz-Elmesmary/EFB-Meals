@@ -58,7 +58,7 @@ export default function App() {
     setUser(u);
     if (u) {
       setSplash(true);
-      setTimeout(() => setSplash(false), 1800);
+      setTimeout(() => setSplash(false), 2200);
     }
   };
 
