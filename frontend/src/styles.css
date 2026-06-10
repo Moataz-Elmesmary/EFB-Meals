@@ -406,6 +406,8 @@ table.report tr:hover td { background: var(--paper-2); }
 .boot-bar { width: min(260px, 70vw); height: 7px; border-radius: 999px; background: rgba(255,255,255,.18); overflow: hidden; }
 .boot-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--orange), var(--gold)); }
 .boot-text { margin-top: 16px; font-weight: 800; letter-spacing: .3px; color: rgba(255,255,255,.85); }
+.boot-plate { filter: drop-shadow(0 12px 24px rgba(0,0,0,.4)); }
+.boot-marquee { position: absolute; bottom: 0; left: 0; right: 0; z-index: 1; }
 
 /* ==========================================================================
    Login gate (mandatory sign-in) — cinematic dark stage
@@ -429,7 +431,7 @@ table.report tr:hover td { background: var(--paper-2); }
   color: #ffe7d4; font-weight: 800; font-size: .82rem; padding: 7px 16px; border-radius: var(--radius-full);
   backdrop-filter: blur(8px);
 }
-.login-tagline { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 900; margin: 6px 0 0; max-width: 460px; line-height: 1.2; }
+.login-tagline { font-size: clamp(1.3rem, 2.6vw, 1.9rem); font-weight: 900; margin: 6px auto 0; max-width: 18ch; line-height: 1.3; text-wrap: balance; }
 .login-tagline .accent { background: linear-gradient(110deg, #FFB37a, #FF6300 60%, #D1B671); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
 /* EFB logo */
@@ -512,10 +514,11 @@ html.lenis, html.lenis body { height: auto; }
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .display {
-  font-size: clamp(2.7rem, 7vw, 5.8rem); font-weight: 900; line-height: .96;
-  letter-spacing: -2px; margin: 18px 0 18px;
+  font-size: clamp(2.2rem, 5vw, 4.4rem); font-weight: 900; line-height: 1.08;
+  letter-spacing: -1.2px; margin: 16px 0; max-width: 14ch; text-wrap: balance;
 }
-[dir="rtl"] .display { letter-spacing: -1px; }
+.display .accent { display: inline-block; }
+[dir="rtl"] .display { letter-spacing: 0; max-width: 16ch; }
 .btn-lg { padding: 16px 32px; font-size: 1.06rem; border-radius: 18px; }
 
 .hero-xl { padding: 78px 0 56px; }
