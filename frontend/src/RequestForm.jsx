@@ -102,15 +102,24 @@ export default function RequestForm({ meals, user }) {
         ))}
       </div>
 
-      {/* Add a special request line */}
-      <div className="special-add">
-        <input
-          value={specialText}
-          placeholder={t('specialLinePlaceholder')}
-          onChange={(e) => setSpecialText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSpecial())}
-        />
-        <button type="button" className="btn btn-ghost" onClick={addSpecial}>✏️ {t('addSpecialLine')}</button>
+      {/* Special request — anything not on the menu */}
+      <div className="special-card">
+        <div className="special-card-head">
+          <span className="special-ico">🙋</span>
+          <div>
+            <div className="special-card-title">{t('specialCardTitle')}</div>
+            <div className="special-card-sub">{t('specialCardSub')}</div>
+          </div>
+        </div>
+        <div className="special-add">
+          <input
+            value={specialText}
+            placeholder={t('specialLinePlaceholder')}
+            onChange={(e) => setSpecialText(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSpecial())}
+          />
+          <button type="button" className="btn btn-orange" onClick={addSpecial}>＋ {t('addSpecialLine')}</button>
+        </div>
       </div>
 
       {/* Cart */}

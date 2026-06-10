@@ -40,6 +40,7 @@ export default function App() {
   const [meals, setMeals] = useState([]);
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
+  const [splash, setSplash] = useState(false); // food loader AFTER login
   const [view, setView] = useState('request');
 
   const heroRef = useRef(null);
@@ -52,9 +53,18 @@ export default function App() {
 
   useSmoothScroll(!!user && view === 'request');
 
+  // Sign in (from restored session or LoginGate) → show the food loader briefly.
+  const enter = (u) => {
+    setUser(u);
+    if (u) {
+      setSplash(true);
+      setTimeout(() => setSplash(false), 1800);
+    }
+  };
+
   useEffect(() => {
     restoreSession()
-      .then((u) => setUser(u))
+      .then(enter)
       .finally(() => setBooting(false));
   }, []);
 
@@ -77,9 +87,14 @@ export default function App() {
     { e: '🍛', t: t('m4') }, { e: '🍮', t: t('m5') }, { e: '☕', t: t('m6') }
   ];
 
-  if (booting) return <BootSplash />;
+  // While restoring the session: neutral background only (no loader before login).
+  if (booting) return <div className="boot"><AuroraBackground variant="night" /></div>;
 
-  if (!user) return <LoginGate onLogin={setUser} />;
+  // Entry point is the login screen — no loader before it.
+  if (!user) return <LoginGate onLogin={enter} />;
+
+  // Food loader shows AFTER sign-in, then the app.
+  if (splash) return <BootSplash />;
 
   return (
     <div className="app-shell">

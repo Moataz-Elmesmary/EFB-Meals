@@ -69,8 +69,10 @@ const resources = {
       modeSpecial: 'Special request',
       cartTitle: 'Your order',
       cartEmpty: 'Your cart is empty — pick from the menu above',
-      addSpecialLine: 'Add special',
-      specialLinePlaceholder: 'e.g. 10 sandwiches, no nuts…',
+      addSpecialLine: 'Add to order',
+      specialCardTitle: 'Want something not on the menu?',
+      specialCardSub: 'Order anything you like — any quantity. Just type it below.',
+      specialLinePlaceholder: 'e.g. 10 club sandwiches, 2 veg platters, no nuts…',
       addBtn: 'Add',
 
       // form
@@ -224,8 +226,10 @@ const resources = {
       modeSpecial: 'طلب خاص',
       cartTitle: 'طلبك',
       cartEmpty: 'سلتك فاضية — اختر من المنيو فوق',
-      addSpecialLine: 'أضف طلب خاص',
-      specialLinePlaceholder: 'مثال: ١٠ ساندويتش بدون مكسرات…',
+      addSpecialLine: 'أضف للطلب',
+      specialCardTitle: 'عايز حاجة مش في المنيو؟',
+      specialCardSub: 'اطلب أي حاجة تحبها بأي كمية — اكتبها تحت وضيفها لطلبك.',
+      specialLinePlaceholder: 'مثال: ١٠ ساندويتش، طبقين نباتي، من غير مكسرات…',
       addBtn: 'أضف',
 
       formTitle: 'أنشئ طلب وجبتك',
