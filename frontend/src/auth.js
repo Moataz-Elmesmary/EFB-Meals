@@ -11,6 +11,40 @@ function setAuthHeader(headers) {
   if (headers) Object.entries(headers).forEach(([k, v]) => (axios.defaults.headers.common[k] = v));
 }
 
+// Force-refresh the cached ID token (e.g. after it expires mid-session).
+async function refreshIdToken() {
+  if (!msal) return false;
+  const account = msal.getActiveAccount() || msal.getAllAccounts()[0];
+  if (!account) return false;
+  try {
+    msal.setActiveAccount(account);
+    const res = await msal.acquireTokenSilent({ scopes: ['User.Read'], account, forceRefresh: true });
+    axios.defaults.headers.common.Authorization = `Bearer ${res.idToken}`;
+    return res.idToken;
+  } catch (_) {
+    return false;
+  }
+}
+
+// On a 401 (expired token), refresh once and retry — so protected calls like
+// /my-requests don't silently fail after the token expires.
+axios.interceptors.response.use(
+  (r) => r,
+  async (error) => {
+    const original = error.config || {};
+    if (error.response && error.response.status === 401 && !original._retried && msal) {
+      original._retried = true;
+      const token = await refreshIdToken();
+      if (token) {
+        original.headers = original.headers || {};
+        original.headers.Authorization = `Bearer ${token}`;
+        return axios(original);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export async function loadConfig() {
   if (config) return config;
   const { data } = await axios.get(`${API_BASE}/api/config`);

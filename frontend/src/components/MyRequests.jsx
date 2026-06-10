@@ -51,13 +51,16 @@ export default function MyRequests({ onReorder }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState(null);
+  const [error, setError] = useState(null);
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       setRows(await getMyRequests());
-    } catch (_) {
+    } catch (e) {
       setRows([]);
+      setError(e.response?.data?.error || e.message || 'Failed to load');
     }
     setLoading(false);
   };
@@ -109,6 +112,8 @@ export default function MyRequests({ onReorder }) {
 
       {loading ? (
         <div className="empty"><div className="big">⏳</div></div>
+      ) : error ? (
+        <div className="alert alert-error">⚠️ {error} <button className="btn btn-ghost btn-sm" style={{ marginInlineStart: 10 }} onClick={load}>↻ {t('refresh')}</button></div>
       ) : rows.length === 0 ? (
         <div className="empty"><div className="big">🍽️</div><h3>{t('myEmpty')}</h3><p>{t('myEmptySub')}</p></div>
       ) : (
