@@ -23,7 +23,10 @@ if (!clientId || !tenantId) {
     }),
     audience: clientId,
     issuer,
-    algorithms: ['RS256']
+    algorithms: ['RS256'],
+    // express-jwt v7 puts the decoded token on req.auth by default — keep it on
+    // req.user so /me reads the claims correctly.
+    requestProperty: 'user'
   });
   module.exports = checkJwt;
 }

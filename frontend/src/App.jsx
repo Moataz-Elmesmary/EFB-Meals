@@ -40,7 +40,6 @@ export default function App() {
   const [meals, setMeals] = useState([]);
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
-  const [intro, setIntro] = useState(() => !sessionStorage.getItem('introShown')); // ~3s splash, once per session
   const [view, setView] = useState('request');
 
   const heroRef = useRef(null);
@@ -57,11 +56,6 @@ export default function App() {
     restoreSession()
       .then((u) => setUser(u))
       .finally(() => setBooting(false));
-    const id = setTimeout(() => {
-      setIntro(false);
-      sessionStorage.setItem('introShown', '1');
-    }, 3000);
-    return () => clearTimeout(id);
   }, []);
 
   useEffect(() => {
@@ -83,7 +77,7 @@ export default function App() {
     { e: '🍛', t: t('m4') }, { e: '🍮', t: t('m5') }, { e: '☕', t: t('m6') }
   ];
 
-  if (booting || intro) return <BootSplash />;
+  if (booting) return <BootSplash />;
 
   if (!user) return <LoginGate onLogin={setUser} />;
 

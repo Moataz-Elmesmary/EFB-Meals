@@ -31,7 +31,7 @@ const resources = {
 
       // login gate
       loginWelcome: 'Welcome to EFB Meals',
-      loginSub: 'Sign in to order delicious meals for your team.',
+      loginSub: 'Sign in to order delicious meals for you & your team.',
       loginSecure: '🔒 Secured by your organization account',
       demoNote: 'Demo mode — enter your work email to continue.',
       enter: 'Enter',
@@ -39,9 +39,9 @@ const resources = {
 
       // hero
       eyebrow: '🍴 Fresh meals, made simple',
-      heroTitlePre: 'Delicious meals for your team,',
+      heroTitlePre: 'Delicious meals for you & your team,',
       heroTitleAccent: 'just a tap away',
-      heroText: 'Pick from a chef-crafted menu or describe exactly what you crave. Fresh, fast, and made for the whole team.',
+      heroText: 'Pick from a chef-crafted menu or describe exactly what you crave. Fresh and fast.',
       ctaOrder: 'Order now',
       ctaMenu: 'Browse menu',
       ctaHow: 'How it works',
@@ -50,7 +50,7 @@ const resources = {
       statBilingual: 'Arabic & English',
 
       // marquee
-      m1: 'Grilled & juicy', m2: 'Fresh salads', m3: 'Stone-baked', m4: 'Home-style', m5: 'Sweet treats', m6: 'Hot & fresh',
+      m1: 'Char-grilled', m2: 'Fresh salads', m3: 'Stone-baked', m4: 'Home-style', m5: 'Sweet treats', m6: 'Hot & fresh',
 
       // how it works
       howTitle: 'Order in 3 easy steps',
@@ -156,7 +156,7 @@ const resources = {
       kitchenSays: 'Kitchen',
       rejectedReason: 'Rejected',
 
-      footer: 'EFB Meals · Designed for a fast, bilingual kitchen workflow.'
+      footer: 'EFB Meals · Designed for a fast kitchen workflow.'
     }
   },
   ar: {
@@ -188,16 +188,16 @@ const resources = {
 
       // login gate
       loginWelcome: 'أهلاً بك في EFB Meals',
-      loginSub: 'سجّل الدخول عشان تطلب وجبات شهية لفريقك.',
+      loginSub: 'سجّل الدخول عشان تطلب وجبات شهية ليك ولفريقك.',
       loginSecure: '🔒 مؤمَّن بحساب مؤسستك',
       demoNote: 'وضع تجريبي — اكتب إيميل العمل عشان تكمّل.',
       enter: 'دخول',
       prep: 'بنجهّز السفرة…',
 
       eyebrow: '🍴 وجبات طازة وببساطة',
-      heroTitlePre: 'وجبات شهية لفريقك،',
+      heroTitlePre: 'وجبات شهية ليك ولفريقك،',
       heroTitleAccent: 'على بُعد ضغطة',
-      heroText: 'اختر من منيو من إعداد الشيف، أو اكتب بالظبط اللي نفسك فيه. طازة، سريعة، ومتعملة للفريق كله.',
+      heroText: 'اختر من منيو من إعداد الشيف، أو اكتب بالظبط اللي نفسك فيه. طازة وسريعة.',
       ctaOrder: 'اطلب دلوقتي',
       ctaMenu: 'تصفّح المنيو',
       ctaHow: 'إزاي بيشتغل',
@@ -206,7 +206,7 @@ const resources = {
       statBilingual: 'عربي وإنجليزي',
 
       // marquee
-      m1: 'مشوي وطري', m2: 'سلطات طازة', m3: 'على الحطب', m4: 'زي البيت', m5: 'حلويات', m6: 'سخن وطازج',
+      m1: 'مشوي على الفحم', m2: 'سلطات طازة', m3: 'على الحطب', m4: 'زي البيت', m5: 'حلويات', m6: 'سخن وطازج',
 
       // how it works
       howTitle: 'اطلب في ٣ خطوات',
@@ -307,7 +307,7 @@ const resources = {
       kitchenSays: 'المطبخ',
       rejectedReason: 'سبب الرفض',
 
-      footer: 'EFB Meals · مصمَّم لسير عمل مطبخ سريع وثنائي اللغة.'
+      footer: 'EFB Meals · مصمَّم لسير عمل مطبخ سريع.'
     }
   }
 };
