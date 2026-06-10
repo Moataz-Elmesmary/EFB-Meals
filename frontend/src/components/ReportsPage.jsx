@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { getKitchenRequests, fileUrl } from '../api';
 
-const STATUSES = ['all', 'requested', 'budget_requested', 'ready_for_sap'];
+const STATUSES = ['all', 'requested', 'budget_set', 'budget_uploaded', 'ready_for_sap', 'rejected'];
 
 export default function ReportsPage() {
   const { t, i18n } = useTranslation();
@@ -12,13 +12,17 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('all');
+  const [dept, setDept] = useState('all');
+  const [error, setError] = useState(null);
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       setRows(await getKitchenRequests());
-    } catch (_) {
+    } catch (e) {
       setRows([]);
+      setError(e.response?.data?.error || e.message || 'Failed to load');
     }
     setLoading(false);
   };
@@ -26,16 +30,23 @@ export default function ReportsPage() {
     load();
   }, []);
 
+  const departments = useMemo(
+    () => Array.from(new Set(rows.map((r) => (r.department || '').trim()).filter(Boolean))).sort(),
+    [rows]
+  );
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     return rows.filter((r) => {
       if (status !== 'all' && r.status !== status) return false;
+      if (dept !== 'all' && (r.department || '') !== dept) return false;
       if (!term) return true;
-      return [r.requester_name, r.requester_email, r.department, r.meal_name, r.name_en, r.name_ar, r.special_request]
+      const itemsText = (r.items || []).map((it) => it.meal_name).join(' ');
+      return [r.requester_name, r.requester_email, r.department, r.meal_name, itemsText, r.notes, String(r.id)]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(term));
     });
-  }, [rows, q, status]);
+  }, [rows, q, status, dept]);
 
   const totalBudget = useMemo(
     () => filtered.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0),
@@ -76,12 +87,16 @@ export default function ReportsPage() {
       <div className="kpis">
         <div className="kpi k-all"><div className="num">{filtered.length}</div><div className="lbl">{t('kpiAll')}</div></div>
         <div className="kpi k-new"><div className="num">{filtered.filter((r) => r.status === 'requested').length}</div><div className="lbl">{t('kpiNew')}</div></div>
-        <div className="kpi k-budget"><div className="num">{filtered.filter((r) => r.status === 'budget_requested').length}</div><div className="lbl">{t('kpiBudget')}</div></div>
-        <div className="kpi k-ready"><div className="num">{Math.round(totalBudget)}</div><div className="lbl">{t('totalBudget')} (EGP)</div></div>
+        <div className="kpi k-ready"><div className="num">{filtered.filter((r) => r.status === 'ready_for_sap').length}</div><div className="lbl">{t('kpiReady')}</div></div>
+        <div className="kpi k-budget"><div className="num">{Math.round(totalBudget)}</div><div className="lbl">{t('totalBudget')} (EGP)</div></div>
       </div>
 
       <div className="report-toolbar">
         <input className="grow" placeholder={`🔎 ${t('search')}`} value={q} onChange={(e) => setQ(e.target.value)} />
+        <select value={dept} onChange={(e) => setDept(e.target.value)}>
+          <option value="all">{t('allDepartments')}</option>
+          {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
           {STATUSES.map((s) => (
             <option key={s} value={s}>{s === 'all' ? t('allStatuses') : t(`status_${s}`)}</option>
@@ -89,6 +104,8 @@ export default function ReportsPage() {
         </select>
         <button className="btn btn-primary btn-sm" onClick={exportCsv} disabled={!filtered.length}>⬇️ {t('exportCsv')}</button>
       </div>
+
+      {error && <div className="alert alert-error" style={{ marginBottom: 14 }}>⚠️ {error} <button className="btn btn-ghost btn-sm" onClick={load}>↻</button></div>}
 
       {loading ? (
         <div className="empty"><div className="big">⏳</div></div>

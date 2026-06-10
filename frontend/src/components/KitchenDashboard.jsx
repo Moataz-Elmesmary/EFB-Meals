@@ -85,6 +85,7 @@ export default function KitchenDashboard() {
   const [busyId, setBusyId] = useState(null);
   const [budgetFor, setBudgetFor] = useState(null);
   const [reason, setReason] = useState(null); // { request, kind: 'order'|'budget'|'note' }
+  const [filter, setFilter] = useState(null); // status filter from the KPI cards
 
   const load = async () => {
     setLoading(true);
@@ -104,6 +105,8 @@ export default function KitchenDashboard() {
     requests.forEach((r) => { c[r.status] = (c[r.status] || 0) + 1; });
     return c;
   }, [requests]);
+
+  const filtered = useMemo(() => (filter ? requests.filter((r) => r.status === filter) : requests), [requests, filter]);
 
   const run = async (id, fn) => {
     setBusyId(id);
@@ -153,20 +156,37 @@ export default function KitchenDashboard() {
       </div>
 
       <div className="kpis">
-        <div className="kpi k-new"><div className="num">{kpis.requested || 0}</div><div className="lbl">{t('kpiNew')}</div></div>
-        <div className="kpi k-budget"><div className="num">{kpis.budget_set || 0}</div><div className="lbl">{t('kpiAwaiting')}</div></div>
-        <div className="kpi k-budget"><div className="num">{kpis.budget_uploaded || 0}</div><div className="lbl">{t('kpiToReview')}</div></div>
-        <div className="kpi k-ready"><div className="num">{kpis.ready_for_sap || 0}</div><div className="lbl">{t('kpiReady')}</div></div>
+        {[
+          { st: 'requested', cls: 'k-new', lbl: 'kpiNew' },
+          { st: 'budget_set', cls: 'k-budget', lbl: 'kpiAwaiting' },
+          { st: 'budget_uploaded', cls: 'k-budget', lbl: 'kpiToReview' },
+          { st: 'ready_for_sap', cls: 'k-ready', lbl: 'kpiReady' }
+        ].map((k) => (
+          <button
+            key={k.st}
+            className={`kpi ${k.cls} ${filter === k.st ? 'active' : ''}`}
+            onClick={() => setFilter(filter === k.st ? null : k.st)}
+          >
+            <div className="num">{kpis[k.st] || 0}</div>
+            <div className="lbl">{t(k.lbl)}</div>
+          </button>
+        ))}
       </div>
+      {filter && (
+        <div className="filter-bar">
+          <span>{t('filtering')}: <b>{t(`status_${filter}`)}</b></span>
+          <button className="btn btn-ghost btn-sm" onClick={() => setFilter(null)}>✕ {t('clearFilter')}</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="empty"><div className="big">⏳</div></div>
-      ) : requests.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="empty"><div className="big">🧑‍🍳</div><h3>{t('noRequests')}</h3><p>{t('noRequestsSub')}</p></div>
       ) : (
         <div className="req-list">
           <AnimatePresence>
-            {requests.map((r, i) => (
+            {filtered.map((r, i) => (
               <motion.div key={r.id} className="req-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.04, 0.3) }}>
                 {/* header */}
                 <div className="order-head">

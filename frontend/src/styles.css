@@ -300,7 +300,10 @@ table.report tr:hover td { background: var(--paper-2); }
 
 /* ---------- Kitchen dashboard ---------- */
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
-.kpi { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); }
+.kpi { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); cursor: pointer; font: inherit; text-align: start; width: 100%; transition: transform .15s var(--ease-out), box-shadow .2s, border-color .2s; }
+.kpi:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.kpi.active { border-color: var(--emerald); box-shadow: 0 0 0 2px var(--emerald) inset, var(--shadow); }
+.filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--emerald-50); border: 1px solid var(--emerald-100); border-radius: var(--radius); padding: 9px 16px; margin-bottom: 16px; font-weight: 700; color: var(--ink-2); }
 .kpi .num { font-size: 1.8rem; font-weight: 900; }
 .kpi .lbl { color: var(--ink-3); font-size: .85rem; font-weight: 700; margin-top: 4px; }
 .kpi.k-new .num { color: var(--orange); }
