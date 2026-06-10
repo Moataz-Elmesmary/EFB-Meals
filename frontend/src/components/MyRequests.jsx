@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { getMyRequests, createRequest, uploadBudget, fileUrl } from '../api';
+import { getMyRequests, uploadBudget, fileUrl } from '../api';
 
 const STEPS = ['requested', 'budget_set', 'budget_uploaded', 'ready_for_sap'];
 
@@ -45,12 +45,12 @@ function UploadBudget({ request, onDone }) {
   );
 }
 
-export default function MyRequests() {
+export default function MyRequests({ onReorder }) {
   const { t, i18n } = useTranslation();
   const ar = i18n.language === 'ar';
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -65,29 +65,28 @@ export default function MyRequests() {
     load();
   }, []);
 
-  const mealLabel = (r) => r.meal_name || (ar ? r.name_ar : r.name_en) || t('special');
-  const itemsLine = (r) => (r.items && r.items.length ? r.items.map((it) => `${it.special ? '📝 ' : ''}${it.meal_name} ×${it.quantity}`).join(' · ') : null);
+  const flash = (msg) => {
+    setNotice(msg);
+    setTimeout(() => setNotice(null), 4000);
+  };
+  const onUploaded = async () => {
+    await load();
+    flash(t('budgetSent'));
+  };
+
+  const itemName = (it) => it.meal_name;
   const stepIndex = (s) => {
     const i = STEPS.indexOf(s);
     return i < 0 ? 0 : i;
   };
 
-  const reorder = async (r) => {
-    setBusyId(r.id);
-    try {
-      await createRequest({
-        requester_name: r.requester_name,
-        requester_email: r.requester_email,
-        department: r.department,
-        phone: r.phone,
-        meal_id: r.is_special ? null : r.meal_id,
-        special_request: r.is_special ? r.special_request : '',
-        people: r.people,
-        notes: r.notes
-      });
-      await load();
-    } catch (_) {}
-    setBusyId(null);
+  const reorder = (r) => {
+    const items = (r.items || []).map((it, i) => {
+      if (it.special) return { key: `s${r.id}_${i}`, meal_id: null, name_en: it.meal_name, name_ar: it.meal_name, emoji: '✏️', quantity: it.quantity, special: true };
+      const parts = String(it.meal_name).split(' / ');
+      return { key: `m${it.meal_id}`, meal_id: it.meal_id, name_en: parts[0], name_ar: parts[1] || parts[0], emoji: it.emoji || '🍽️', quantity: it.quantity, special: false };
+    });
+    if (items.length) onReorder?.(items);
   };
 
   return (
@@ -100,6 +99,14 @@ export default function MyRequests() {
         <button className="btn btn-ghost btn-sm" onClick={load}>↻ {t('refresh')}</button>
       </div>
 
+      <AnimatePresence>
+        {notice && (
+          <motion.div className="alert alert-success" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ marginBottom: 16 }}>
+            ✅ {notice}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {loading ? (
         <div className="empty"><div className="big">⏳</div></div>
       ) : rows.length === 0 ? (
@@ -108,24 +115,33 @@ export default function MyRequests() {
         <div className="req-list">
           {rows.map((r, i) => {
             const needsUpload = r.status === 'budget_set';
+            const completed = r.status === 'ready_for_sap';
             return (
               <motion.div key={r.id} className="req-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.04, 0.3) }}>
-                <div className="req-top">
-                  <div className="req-emoji">{r.is_special ? '✏️' : r.emoji || '🍽️'}</div>
-                  <div className="req-main">
-                    <div className="req-title">
-                      #{r.id} · {mealLabel(r)} <span className={`badge badge-${r.status}`}>{t(`status_${r.status}`)}</span>
-                      {r.urgent ? <span className="badge badge-urgent" style={{ marginInlineStart: 6 }}>🚨 {t('urgent')}</span> : null}
-                    </div>
-                    <div className="req-meta">
-                      <span>🍴 {t('totalQty')}: {r.people}</span>
-                      {r.needed_date ? <span>📅 {r.needed_date}</span> : null}
-                      {r.amount != null ? <span>💰 {r.amount} {r.currency}</span> : null}
-                    </div>
+                <div className="order-head">
+                  <div className="order-id">{t('orderWord')} <b>#{r.id}</b></div>
+                  <div className="order-badges">
+                    <span className={`badge badge-${r.status}`}>{t(`status_${r.status}`)}</span>
+                    {r.urgent ? <span className="badge badge-urgent">🚨 {t('urgent')}</span> : null}
                   </div>
                 </div>
 
-                {itemsLine(r) ? <div className="items-line">🧾 {itemsLine(r)}</div> : null}
+                <div className="order-items">
+                  {(r.items || []).map((it) => (
+                    <div className="oi-row" key={it.id}>
+                      <span className="oi-name">{it.special ? '📝' : it.emoji || '🍽️'} {itemName(it)}</span>
+                      <span className="oi-qty">× {it.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="order-meta">
+                  {r.needed_date ? <span>📅 {r.needed_date}</span> : <span>📅 {t('asap')}</span>}
+                  {r.needed_time ? <span>⏰ {r.needed_time}</span> : null}
+                  <span>🍴 {t('totalQty')}: {r.people}</span>
+                  {r.amount != null ? <span>💰 {r.amount} {r.currency}</span> : null}
+                </div>
+
                 {r.kitchen_notes ? <div className="special-box">💬 {t('kitchenSays')}: {r.kitchen_notes}</div> : null}
                 {r.reject_reason ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {t('rejectedReason')}: {r.reject_reason}</div> : null}
 
@@ -142,16 +158,18 @@ export default function MyRequests() {
                   })}
                 </div>
 
-                {needsUpload && <UploadBudget request={r} onDone={load} />}
+                {needsUpload && <UploadBudget request={r} onDone={onUploaded} />}
 
-                <div className="req-actions">
-                  <button className="btn btn-orange btn-sm" onClick={() => reorder(r)} disabled={busyId === r.id}>
-                    {busyId === r.id ? <span className="spinner" /> : '🔁'} {t('reorder')}
-                  </button>
-                  {r.attachment_path && (
-                    <a className="btn btn-ghost btn-sm" href={fileUrl(r.attachment_path)} target="_blank" rel="noreferrer">📎 {t('viewAttachment')}</a>
-                  )}
-                </div>
+                {(completed || r.attachment_path) && (
+                  <div className="req-actions">
+                    {completed && (
+                      <button className="btn btn-orange btn-sm" onClick={() => reorder(r)}>🔁 {t('reorder')}</button>
+                    )}
+                    {r.attachment_path && (
+                      <a className="btn btn-ghost btn-sm" href={fileUrl(r.attachment_path)} target="_blank" rel="noreferrer">📎 {t('viewAttachment')}</a>
+                    )}
+                  </div>
+                )}
               </motion.div>
             );
           })}

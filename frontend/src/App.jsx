@@ -42,6 +42,13 @@ export default function App() {
   const [booting, setBooting] = useState(true);
   const [splash, setSplash] = useState(false); // food loader AFTER login
   const [view, setView] = useState('request');
+  const [reorderCart, setReorderCart] = useState(null);
+
+  const onReorder = (items) => {
+    setReorderCart(items);
+    setView('request');
+    setTimeout(() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' }), 120);
+  };
 
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
@@ -191,14 +198,14 @@ export default function App() {
                   </div>
                 </div>
               </Reveal>
-              <Reveal delay={0.05}><RequestForm meals={meals} user={user} /></Reveal>
+              <Reveal delay={0.05}><RequestForm meals={meals} user={user} initialCart={reorderCart} onCartConsumed={() => setReorderCart(null)} /></Reveal>
             </div>
           </section>
 
           <Marquee items={marqueeItems} reverse />
         </>
       ) : view === 'mine' ? (
-        <MyRequests />
+        <MyRequests onReorder={onReorder} />
       ) : view === 'kitchen' ? (
         <KitchenDashboard />
       ) : (

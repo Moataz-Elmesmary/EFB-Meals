@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import MenuCard from './components/MenuCard';
 import { createRequest } from './api';
 
-export default function RequestForm({ meals, user }) {
+export default function RequestForm({ meals, user, initialCart, onCartConsumed }) {
   const { t, i18n } = useTranslation();
   const ar = i18n.language === 'ar';
   const [cart, setCart] = useState([]); // { key, meal_id, name_en, name_ar, emoji, quantity, special }
@@ -15,6 +15,15 @@ export default function RequestForm({ meals, user }) {
 
   const mealOptions = useMemo(() => meals || [], [meals]);
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  // Prefill the cart when reordering a previous order.
+  useEffect(() => {
+    if (initialCart && initialCart.length) {
+      setCart(initialCart);
+      onCartConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCart]);
   const displayName =
     user?.name && user.name.toLowerCase() !== 'user'
       ? user.name

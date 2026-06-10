@@ -164,6 +164,7 @@ const resources = {
       kpiToReview: 'To review',
       uploadBudgetTitle: 'Upload the budget (PDF) for this order',
       sendBudget: 'Send budget',
+      budgetSent: 'Budget sent successfully!',
       kitchenSays: 'Kitchen',
       rejectedReason: 'Rejected',
 
@@ -326,6 +327,7 @@ const resources = {
       kpiToReview: 'للمراجعة',
       uploadBudgetTitle: 'ارفع موازنة الطلب (PDF)',
       sendBudget: 'إرسال الموازنة',
+      budgetSent: 'تم إرسال الموازنة بنجاح!',
       kitchenSays: 'المطبخ',
       rejectedReason: 'سبب الرفض',
 
