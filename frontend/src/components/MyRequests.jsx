@@ -118,7 +118,7 @@ export default function MyRequests() {
                       {r.urgent ? <span className="badge badge-urgent" style={{ marginInlineStart: 6 }}>🚨 {t('urgent')}</span> : null}
                     </div>
                     <div className="req-meta">
-                      <span>👥 {r.people} {t('people')}</span>
+                      <span>🍴 {t('totalQty')}: {r.people}</span>
                       {r.needed_date ? <span>📅 {r.needed_date}</span> : null}
                       {r.amount != null ? <span>💰 {r.amount} {r.currency}</span> : null}
                     </div>

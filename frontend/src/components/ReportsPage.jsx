@@ -103,7 +103,7 @@ export default function ReportsPage() {
                 <th>{t('colRequester')}</th>
                 <th>{t('deptLabel')}</th>
                 <th>{t('colMeal')}</th>
-                <th>{t('people')}</th>
+                <th>{t('totalQty')}</th>
                 <th>{t('colStatus')}</th>
                 <th>{t('colBudget')}</th>
                 <th>{t('colAttachment')}</th>
