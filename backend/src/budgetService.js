@@ -1,53 +1,83 @@
-// Shared budget-flow actions, used by both the kitchen API and the in-email
-// approve/reject links so the behaviour is identical everywhere.
+// Shared budget-flow actions used by the kitchen API and the in-email links.
+//
+// Flow:
+//   requested        → kitchen reviews the order
+//   budget_set       → kitchen approved & set the required amount; employee uploads PDF
+//   budget_uploaded  → employee uploaded the PDF; kitchen approves/rejects (app or email)
+//   ready_for_sap    → kitchen approved → pushed to SAP
+//   rejected         → kitchen rejected the order (terminal)
 const dao = require('./db');
 const email = require('./email');
 const { pushRequestToSAP } = require('./sapService');
 const T = require('./templates/emailTemplates');
 
-// Kitchen asks the requester to upload a budget PDF.
-async function requestBudget(id) {
+// Step 2 — kitchen approves the order and sets the required budget amount.
+async function setBudget(id, { amount, currency, vendor }) {
   const req = await dao.getRequest(id);
   if (!req) throw new Error('Request not found');
-  await dao.updateRequest(id, { status: 'budget_requested' });
+  await dao.createBudget({
+    meal_request_id: id,
+    amount: parseFloat(amount),
+    currency: currency || 'EGP',
+    vendor: vendor || '',
+    created_by: 'kitchen'
+  });
+  await dao.updateRequest(id, { status: 'budget_set', reject_reason: '' });
   if (req.requester_email) {
     email
-      .sendNotification(req.requester_email, `📄 Budget needed #${id} — مطلوب موازنة`, T.budgetUploadRequestTemplate(req))
+      .sendNotification(
+        req.requester_email,
+        `💰 Budget required #${id} — موازنة مطلوبة`,
+        T.budgetSetTemplate(req, { amount: parseFloat(amount), currency: currency || 'EGP' })
+      )
       .catch(() => {});
   }
-  return { status: 'budget_requested' };
+  return { status: 'budget_set' };
 }
 
-// Approve the uploaded budget → push to SAP → notify requester.
+// Step 2 (alt) — kitchen rejects the whole order.
+async function rejectOrder(id, reason) {
+  const req = await dao.getRequest(id);
+  if (!req) throw new Error('Request not found');
+  await dao.updateRequest(id, { status: 'rejected', reject_reason: reason || '' });
+  if (req.requester_email) {
+    email
+      .sendNotification(req.requester_email, `❌ Order declined #${id} — تم رفض الطلب`, T.orderRejectedTemplate(req, reason || ''))
+      .catch(() => {});
+  }
+  return { status: 'rejected' };
+}
+
+// Step 4 — kitchen approves the uploaded budget document → push to SAP.
 async function approve(id) {
   const req = await dao.getRequest(id);
   if (!req) throw new Error('Request not found');
   const budget = await dao.latestBudgetFor(id);
-  if (!budget) throw new Error('No budget uploaded to approve.');
+  if (!budget || !budget.attachment_data) throw new Error('No budget document uploaded yet.');
   const sap = await pushRequestToSAP(id);
   await dao.updateRequest(id, { status: 'ready_for_sap' });
   if (req.requester_email) {
     email
-      .sendNotification(req.requester_email, `🎉 Budget approved #${id} — تم اعتماد الموازنة`, T.budgetApprovedTemplate(req))
+      .sendNotification(req.requester_email, `🎉 Order confirmed #${id} — طلبك اكتمل`, T.budgetApprovedTemplate(req))
       .catch(() => {});
   }
   return { status: 'ready_for_sap', ...sap };
 }
 
-// Reject with a reason → notify requester (who can re-upload).
+// Step 4 (alt) — kitchen rejects the uploaded document → employee re-uploads.
 async function reject(id, reason) {
   const req = await dao.getRequest(id);
   if (!req) throw new Error('Request not found');
-  await dao.updateRequest(id, { status: 'budget_rejected', reject_reason: reason || '' });
+  await dao.updateRequest(id, { status: 'budget_set', reject_reason: reason || '' });
   if (req.requester_email) {
     email
       .sendNotification(req.requester_email, `⚠️ Budget needs changes #${id} — تعديل الموازنة`, T.budgetRejectedTemplate(req, reason || ''))
       .catch(() => {});
   }
-  return { status: 'budget_rejected' };
+  return { status: 'budget_set' };
 }
 
-// Kitchen adds a note (delay / problem / info) → notify requester.
+// Kitchen note at any time.
 async function addNote(id, note) {
   const req = await dao.getRequest(id);
   if (!req) throw new Error('Request not found');
@@ -60,4 +90,4 @@ async function addNote(id, note) {
   return { ok: true };
 }
 
-module.exports = { requestBudget, approve, reject, addNote };
+module.exports = { setBudget, rejectOrder, approve, reject, addNote };

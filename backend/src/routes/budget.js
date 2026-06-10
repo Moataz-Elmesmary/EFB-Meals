@@ -19,29 +19,22 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 const API_URL = process.env.API_URL || `http://localhost:${process.env.PORT || 4000}`;
 
-// ── Requester uploads the budget PDF + amount ───────────────
+// ── Requester uploads the budget document (PDF). Amount was set by the kitchen.
 router.post('/budget/upload/:id', upload.single('attachment'), async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const { amount, currency, vendor, notes } = req.body;
   if (!req.file) return res.status(400).json({ error: 'A budget PDF is required.' });
-  if (amount == null || amount === '' || isNaN(parseFloat(amount))) {
-    return res.status(400).json({ error: 'A valid amount is required.' });
-  }
   try {
     const reqRow = await dao.getRequest(id);
     if (!reqRow) return res.status(404).json({ error: 'Request not found' });
+    const budget = await dao.latestBudgetFor(id);
+    if (!budget) return res.status(400).json({ error: 'No budget has been set for this order yet.' });
 
     let data = null;
     try {
       data = fs.readFileSync(req.file.path).toString('base64');
     } catch (_) {}
 
-    const budgetId = await dao.createBudget({
-      meal_request_id: id,
-      amount: parseFloat(amount),
-      currency: currency || 'EGP',
-      vendor: vendor || '',
-      notes: notes || '',
+    await dao.updateBudget(budget.id, {
       attachment_path: `/uploads/${req.file.filename}`,
       attachment_name: req.file.originalname,
       attachment_mime: req.file.mimetype,
@@ -50,8 +43,7 @@ router.post('/budget/upload/:id', upload.single('attachment'), async (req, res) 
     });
     await dao.updateRequest(id, { status: 'budget_uploaded', reject_reason: '' });
 
-    // notify the kitchen with the PDF attached + approve/reject links
-    const budget = { amount: parseFloat(amount), currency: currency || 'EGP', vendor };
+    // notify the kitchen with the PDF + approve/reject links
     const links = {
       approve: `${API_URL}/api/budget/action?token=${makeToken(id, 'approve')}`,
       reject: `${API_URL}/api/budget/action?token=${makeToken(id, 'reject')}`
@@ -62,19 +54,19 @@ router.post('/budget/upload/:id', upload.single('attachment'), async (req, res) 
     email
       .sendNotification(
         process.env.KITCHEN_EMAIL || 'kitchen@efb.eg',
-        `🧾 Budget to review #${id} — موازنة للمراجعة`,
-        T.budgetApprovalRequestTemplate(reqRow, budget, links),
+        `🧾 Budget uploaded #${id} — تم رفع الموازنة`,
+        T.budgetUploadedTemplate(reqRow, budget, links),
         attachments
       )
       .catch(() => {});
 
-    res.status(201).json({ budgetId, status: 'budget_uploaded' });
+    res.status(201).json({ status: 'budget_uploaded' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// ── In-email approve / reject (token-verified, no login) ────
+// ── In-email approve / reject of the uploaded document (token-verified) ──
 function page(message, ok) {
   const color = ok ? '#085648' : '#CC4948';
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

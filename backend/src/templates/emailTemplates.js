@@ -150,26 +150,22 @@ function approveRejectButtons(approveUrl, rejectUrl) {
   <div style="text-align:center;font-size:11px;color:#9aa8a3;margin-top:10px;">القرار يُنفّذ فوراً · الرابط صالح 72 ساعة</div>`;
 }
 
-// To employee: please upload the budget PDF.
-function budgetUploadRequestTemplate(req) {
-  const rows = [
-    ['رقم الطلب', 'Request #', `#${req.id}`],
-    ['الوجبة', 'Meal', mealLabel(req)],
-    ['عدد الأفراد', 'People', req.people]
-  ];
+// To employee: the kitchen set the required budget → please upload the PDF.
+function budgetSetTemplate(req, budget) {
+  const amount = budget && budget.amount != null ? `${Number(budget.amount).toLocaleString()} ${budget.currency || 'EGP'}` : '—';
   return layout({
-    emoji: '📄',
+    emoji: '💰',
     accent: BRAND.gold,
-    chip: 'مطلوب موازنة · Budget needed',
+    chip: 'موازنة مطلوبة · Budget required',
     chipColor: BRAND.gold,
-    title: 'محتاجين موازنة طلبك',
-    intro: 'برجاء رفع ملف الموازنة (PDF) من الأبليكيشن عشان نكمّل تجهيز طلبك.<br>Please upload the budget PDF from the app to proceed.',
-    content: detailsTable(rows) + ctaButton('⬆️ رفع الموازنة · Upload budget', APP_URL, BRAND.orange)
+    title: 'تمت الموافقة على طلبك',
+    intro: 'وافق المطبخ على طلبك وحدّد الموازنة المطلوبة. من فضلك ارفع مستند الموازنة (PDF) من «طلباتي».<br>Your order is approved and the required budget is set. Please upload the budget document (PDF) from “My Requests”.',
+    content: totalBox('الموازنة المطلوبة · Required budget', amount) + ctaButton('⬆️ رفع مستند الموازنة · Upload budget', APP_URL, BRAND.orange)
   });
 }
 
 // To kitchen: employee uploaded the PDF → approve/reject (in app or email).
-function budgetApprovalRequestTemplate(req, budget, links) {
+function budgetUploadedTemplate(req, budget, links) {
   const amount = budget && budget.amount != null ? `${Number(budget.amount).toLocaleString()} ${budget.currency || 'EGP'}` : '—';
   const rows = [
     ['رقم الطلب', 'Request #', `#${req.id}`],
@@ -204,6 +200,23 @@ function budgetApprovedTemplate(req) {
     title: 'تم اعتماد الموازنة',
     intro: 'تم اعتماد الموازنة، والمطبخ بدأ تجهيز طلبك. 🧑‍🍳<br>Your budget is approved — the kitchen is now preparing your order.',
     content: itemsTable(req.items) || detailsTable(rows)
+  });
+}
+
+// To employee: the kitchen declined the whole order.
+function orderRejectedTemplate(req, reason) {
+  const rows = [
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['سبب الرفض', 'Reason', reason]
+  ];
+  return layout({
+    emoji: '❌',
+    accent: BRAND.melon,
+    chip: 'مرفوض · Declined',
+    chipColor: BRAND.melon,
+    title: 'تم رفض الطلب',
+    intro: 'للأسف المطبخ رفض الطلب الحالي. تقدر تعمل طلب جديد في أي وقت.<br>The kitchen declined this order. You can place a new one anytime.',
+    content: detailsTable(rows)
   });
 }
 
@@ -260,8 +273,13 @@ function newRequestTemplate(req) {
     chip: req.urgent ? 'عاجل · Urgent' : 'طلب جديد · New order',
     chipColor: req.urgent ? BRAND.melon : BRAND.orange,
     title: 'طلب وجبة جديد للمطبخ',
-    intro: 'وصل طلب جديد بالأصناف والكميات التالية. مقدّم الطلب اتطلب منه يرفع الموازنة.<br>A new order — the requester has been asked to upload the budget.',
-    content: urgentBanner + itemsTable(req.items) + `<div style="height:14px"></div>` + detailsTable(rows)
+    intro: 'وصل طلب جديد بالأصناف والكميات التالية. افتح الأبليكيشن للموافقة وتحديد الموازنة أو الرفض.<br>A new order — open the app to approve & set the budget, or reject.',
+    content:
+      urgentBanner +
+      itemsTable(req.items) +
+      `<div style="height:14px"></div>` +
+      detailsTable(rows) +
+      ctaButton('🍳 افتح الأبليكيشن · Open the app', APP_URL, BRAND.emerald)
   });
 }
 
@@ -273,10 +291,10 @@ function requestConfirmationTemplate(req) {
     ['وقت الاستلام', 'Delivery time', req.needed_time],
     ['ملاحظات', 'Notes', req.notes]
   ];
-  const budgetNote = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr>
-    <td style="background:${BRAND.goldLight};border-radius:12px;padding:14px 16px;color:${BRAND.gold ? '#8a6d1f' : BRAND.inkSoft};" dir="rtl">
-      <b>الخطوة الجاية:</b> محتاجين موازنة لطلبك. من فضلك ارفع ملف الموازنة (PDF) من صفحة «طلباتي».<br>
-      <span style="opacity:.85">Next: this order needs a budget — upload the PDF from “My Requests”.</span>
+  const waitNote = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr>
+    <td style="background:${BRAND.goldLight};border-radius:12px;padding:14px 16px;color:#8a6d1f;" dir="rtl">
+      <b>الخطوة الجاية:</b> المطبخ بيراجع طلبك وهيجهّزلك الموازنة المطلوبة — هنبعتلك تحديث قريب.<br>
+      <span style="opacity:.85">Next: the kitchen will review your order and prepare the required budget. We'll email you shortly.</span>
     </td></tr></table>`;
   return layout({
     emoji: '✅',
@@ -285,7 +303,7 @@ function requestConfirmationTemplate(req) {
     chipColor: BRAND.emerald,
     title: 'تأكيد طلبك',
     intro: `أهلاً ${req.requester_name || ''}، استلمنا طلبك 🧑‍🍳<br>We got your order — here's what you asked for.`,
-    content: itemsTable(req.items) + `<div style="height:12px"></div>` + detailsTable(rows) + budgetNote + ctaButton('⬆️ رفع الموازنة · Upload budget', APP_URL, BRAND.orange)
+    content: itemsTable(req.items) + `<div style="height:12px"></div>` + detailsTable(rows) + waitNote
   });
 }
 
@@ -331,11 +349,10 @@ function readyTemplate(req) {
 module.exports = {
   newRequestTemplate,
   requestConfirmationTemplate,
-  budgetCreatedTemplate,
-  readyTemplate,
-  budgetUploadRequestTemplate,
-  budgetApprovalRequestTemplate,
+  budgetSetTemplate,
+  budgetUploadedTemplate,
   budgetApprovedTemplate,
   budgetRejectedTemplate,
+  orderRejectedTemplate,
   kitchenNoteTemplate
 };

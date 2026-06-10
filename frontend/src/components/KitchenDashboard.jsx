@@ -1,7 +1,50 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import API_BASE, { getKitchenRequests, requestBudget, approveBudget, rejectBudget, addKitchenNote, fileUrl } from '../api';
+import API_BASE, { getKitchenRequests, setBudget, rejectOrder, approveBudget, rejectBudget, addKitchenNote, fileUrl } from '../api';
+
+function SetBudgetModal({ request, onClose, onSave }) {
+  const { t } = useTranslation();
+  const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('EGP');
+  const [vendor, setVendor] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!amount || isNaN(parseFloat(amount))) return setErr(t('amountRequired'));
+    setBusy(true);
+    try {
+      await onSave({ amount, currency, vendor });
+    } catch (e2) {
+      setErr(e2.response?.data?.error || t('error'));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <motion.form
+        className="modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}
+        initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94 }}
+      >
+        <h3>💰 {t('setBudgetTitle')}</h3>
+        <p className="sub">#{request.id} — {t('setBudgetSub')}</p>
+        <div className="form-grid">
+          <div className="field"><label>{t('amountLabel')}</label><input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus /></div>
+          <div className="field"><label>{t('currencyLabel')}</label><select value={currency} onChange={(e) => setCurrency(e.target.value)}><option>EGP</option><option>USD</option><option>EUR</option><option>SAR</option></select></div>
+          <div className="field full"><label>{t('vendorLabel')}</label><input value={vendor} onChange={(e) => setVendor(e.target.value)} /></div>
+        </div>
+        {err && <div className="alert alert-error" style={{ marginTop: 12 }}>⚠️ {err}</div>}
+        <div style={{ display: 'flex', gap: 12, marginTop: 20, justifyContent: 'flex-end' }}>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{t('cancel')}</button>
+          <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? <span className="spinner" /> : '✓'} {t('setBudgetSend')}</button>
+        </div>
+      </motion.form>
+    </div>
+  );
+}
 
 export default function KitchenDashboard() {
   const { t, i18n } = useTranslation();
@@ -9,6 +52,7 @@ export default function KitchenDashboard() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [budgetFor, setBudgetFor] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -39,7 +83,10 @@ export default function KitchenDashboard() {
     }
     setBusyId(null);
   };
-
+  const doRejectOrder = (r) => {
+    const reason = window.prompt(t('rejectOrderPrompt'));
+    if (reason && reason.trim()) run(r.id, () => rejectOrder(r.id, reason.trim()));
+  };
   const doReject = (r) => {
     const reason = window.prompt(t('rejectPrompt'));
     if (reason && reason.trim()) run(r.id, () => rejectBudget(r.id, reason.trim()));
@@ -47,6 +94,11 @@ export default function KitchenDashboard() {
   const doNote = (r) => {
     const note = window.prompt(t('notePrompt'), r.kitchen_notes || '');
     if (note != null) run(r.id, () => addKitchenNote(r.id, note));
+  };
+  const saveBudget = async (payload) => {
+    await setBudget(budgetFor.id, payload);
+    setBudgetFor(null);
+    await load();
   };
 
   const mealLabel = (r) => r.meal_name || (ar ? r.name_ar : r.name_en) || t('special');
@@ -65,7 +117,7 @@ export default function KitchenDashboard() {
 
       <div className="kpis">
         <div className="kpi k-new"><div className="num">{kpis.requested || 0}</div><div className="lbl">{t('kpiNew')}</div></div>
-        <div className="kpi k-budget"><div className="num">{(kpis.budget_requested || 0) + (kpis.budget_rejected || 0)}</div><div className="lbl">{t('kpiAwaiting')}</div></div>
+        <div className="kpi k-budget"><div className="num">{kpis.budget_set || 0}</div><div className="lbl">{t('kpiAwaiting')}</div></div>
         <div className="kpi k-budget"><div className="num">{kpis.budget_uploaded || 0}</div><div className="lbl">{t('kpiToReview')}</div></div>
         <div className="kpi k-ready"><div className="num">{kpis.ready_for_sap || 0}</div><div className="lbl">{t('kpiReady')}</div></div>
       </div>
@@ -84,13 +136,13 @@ export default function KitchenDashboard() {
                   <div className="req-main">
                     <div className="req-title">
                       #{r.id} · {mealLabel(r)} <span className={`badge badge-${r.status}`}>{t(`status_${r.status}`)}</span>
-                      {r.is_special ? <span className="badge badge-special" style={{ marginInlineStart: 6 }}>{t('special')}</span> : null}
                       {r.urgent ? <span className="badge badge-urgent" style={{ marginInlineStart: 6 }}>🚨 {t('urgent')}</span> : null}
                     </div>
                     <div className="req-meta">
                       <span>👤 {r.requester_name}</span>
                       <span>✉️ {r.requester_email}</span>
                       {r.department ? <span>🏢 {r.department}</span> : null}
+                      {r.phone ? <span>📞 {r.phone}</span> : null}
                       <span>👥 {r.people} {t('people')}</span>
                       {r.needed_date ? <span>📅 {r.needed_date}</span> : null}
                       {r.needed_time ? <span>⏰ {r.needed_time}</span> : null}
@@ -101,15 +153,16 @@ export default function KitchenDashboard() {
 
                 {itemsLine(r) ? <div className="items-line">🧾 {itemsLine(r)}</div> : null}
                 {r.notes ? <div className="special-box">📝 {r.notes}</div> : null}
-                {r.reject_reason && r.status === 'budget_rejected' ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {r.reject_reason}</div> : null}
+                {r.reject_reason ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {r.reject_reason}</div> : null}
 
                 <div className="req-actions">
                   {r.status === 'requested' && (
-                    <button className="btn btn-orange btn-sm" onClick={() => run(r.id, () => requestBudget(r.id))} disabled={busyId === r.id}>📄 {t('requestBudget')}</button>
+                    <>
+                      <button className="btn btn-orange btn-sm" onClick={() => setBudgetFor(r)} disabled={busyId === r.id}>💰 {t('setBudget')}</button>
+                      <button className="btn btn-sm" style={{ background: 'var(--danger)', color: '#fff' }} onClick={() => doRejectOrder(r)} disabled={busyId === r.id}>✕ {t('rejectOrder')}</button>
+                    </>
                   )}
-                  {(r.status === 'budget_requested' || r.status === 'budget_rejected') && (
-                    <span className="await-note">⏳ {t('awaitingUpload')}</span>
-                  )}
+                  {r.status === 'budget_set' && <span className="await-note">⏳ {t('awaitingUpload')}</span>}
                   {r.status === 'budget_uploaded' && (
                     <>
                       <a className="btn btn-ghost btn-sm" href={pdfUrl(r)} target="_blank" rel="noreferrer">📎 {t('viewBudget')}</a>
@@ -127,6 +180,10 @@ export default function KitchenDashboard() {
           </AnimatePresence>
         </div>
       )}
+
+      <AnimatePresence>
+        {budgetFor && <SetBudgetModal request={budgetFor} onClose={() => setBudgetFor(null)} onSave={saveBudget} />}
+      </AnimatePresence>
     </div>
   );
 }

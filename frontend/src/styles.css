@@ -322,8 +322,11 @@ table.report tr:hover td { background: var(--paper-2); }
 .badge-requested { background: var(--orange-light); color: var(--orange-dark); }
 .badge-budget_requested { background: var(--gold-light); color: var(--gold-dark); }
 .badge-ready_for_sap { background: var(--emerald-100); color: var(--emerald); }
+.badge-budget_set { background: var(--gold-light); color: var(--gold-dark); }
 .badge-budget_uploaded { background: var(--cyan-light); color: var(--cyan-dark); }
-.badge-budget_rejected { background: #fdecec; color: var(--melon); }
+.badge-rejected { background: #fdecec; color: var(--melon); }
+.required-budget { margin-top: 8px; font-size: .95rem; color: var(--gold-dark); }
+.required-budget b { font-size: 1.05rem; }
 .badge-special { background: #ece9ff; color: #5b46c9; }
 .badge-urgent { background: #fdecec; color: var(--melon); }
 .await-note { color: var(--ink-3); font-weight: 700; font-size: .88rem; align-self: center; }

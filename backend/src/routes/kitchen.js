@@ -25,16 +25,31 @@ router.get('/budget/:budgetId/file', async (req, res) => {
   }
 });
 
-// Kitchen → ask the requester to upload a budget PDF.
-router.post('/request-budget/:id', async (req, res) => {
+// Step 2 — kitchen approves the order and sets the required budget amount.
+router.post('/set-budget/:id', async (req, res) => {
+  const { amount, currency, vendor } = req.body || {};
+  if (amount == null || amount === '' || isNaN(parseFloat(amount))) {
+    return res.status(400).json({ error: 'A valid budget amount is required.' });
+  }
   try {
-    res.json(await budgetFlow.requestBudget(parseInt(req.params.id, 10)));
+    res.json(await budgetFlow.setBudget(parseInt(req.params.id, 10), { amount, currency, vendor }));
   } catch (e) {
     res.status(e.message === 'Request not found' ? 404 : 500).json({ error: e.message });
   }
 });
 
-// Kitchen → approve the uploaded budget (→ SAP).
+// Step 2 (alt) — kitchen rejects the whole order.
+router.post('/reject-order/:id', async (req, res) => {
+  const reason = (req.body && req.body.reason) || '';
+  if (!reason.trim()) return res.status(400).json({ error: 'A reason is required.' });
+  try {
+    res.json(await budgetFlow.rejectOrder(parseInt(req.params.id, 10), reason));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// Step 4 — kitchen approves the uploaded budget document → SAP.
 router.post('/approve/:id', async (req, res) => {
   try {
     res.json(await budgetFlow.approve(parseInt(req.params.id, 10)));
@@ -43,7 +58,7 @@ router.post('/approve/:id', async (req, res) => {
   }
 });
 
-// Kitchen → reject the budget with a reason.
+// Step 4 (alt) — kitchen rejects the uploaded document (employee re-uploads).
 router.post('/reject/:id', async (req, res) => {
   const reason = (req.body && req.body.reason) || '';
   if (!reason.trim()) return res.status(400).json({ error: 'A rejection reason is required.' });
@@ -54,7 +69,7 @@ router.post('/reject/:id', async (req, res) => {
   }
 });
 
-// Kitchen → add a note (delay / problem / info).
+// Kitchen note (delay / problem / info) at any time.
 router.post('/note/:id', async (req, res) => {
   const note = (req.body && req.body.note) || '';
   try {

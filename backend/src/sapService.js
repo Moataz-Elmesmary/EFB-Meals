@@ -19,21 +19,24 @@ const sapConfig = {
   options: { trustServerCertificate: true, enableArithAbort: true }
 };
 
-function buildPayload(row) {
-  const unitPrice = row.price || 0;
+function buildPayload(row, budget) {
   return {
     DocType: 'SalesOrder',
     RequestId: row.id,
     RequesterName: row.requester_name,
     RequesterEmail: row.requester_email,
     Department: row.department,
-    MealName: row.is_special ? 'Special request' : row.meal_name || row.name_en,
-    IsSpecial: !!row.is_special,
-    SpecialRequest: row.special_request,
-    Quantity: row.people,
-    UnitPrice: row.is_special ? null : unitPrice,
-    LineTotal: row.is_special ? null : unitPrice * (row.people || 1),
+    Phone: row.phone,
+    // full cart: every item + its quantity
+    Items: (row.items || []).map((it) => ({ meal: it.meal_name, special: !!it.special, quantity: it.quantity })),
+    Summary: row.meal_name,
+    TotalQuantity: row.people,
     NeededDate: row.needed_date,
+    NeededTime: row.needed_time,
+    Notes: row.notes,
+    Budget: budget ? { amount: budget.amount, currency: budget.currency, vendor: budget.vendor } : null,
+    BudgetFileName: budget && budget.attachment_name,
+    BudgetFileBase64: budget && budget.attachment_data, // PDF stored in SAP too
     Status: row.status,
     CreatedAt: row.created_at
   };
@@ -50,9 +53,9 @@ async function insertIntoSap(p) {
       .input('RequestId', mssql.Int, p.RequestId)
       .input('Requester', mssql.NVarChar(200), p.RequesterName)
       .input('Department', mssql.NVarChar(200), p.Department)
-      .input('MealName', mssql.NVarChar(400), p.MealName)
-      .input('Quantity', mssql.Int, p.Quantity)
-      .input('LineTotal', mssql.Decimal(12, 2), p.LineTotal)
+      .input('MealName', mssql.NVarChar(400), p.Summary)
+      .input('Quantity', mssql.Int, p.TotalQuantity)
+      .input('LineTotal', mssql.Decimal(12, 2), p.Budget ? p.Budget.amount : null)
       .input('NeededDate', mssql.NVarChar(20), p.NeededDate)
       .input('Payload', mssql.NVarChar(mssql.MAX), JSON.stringify(p))
       .query(
@@ -84,8 +87,9 @@ async function pushToSapTarget(payload) {
 async function pushRequestToSAP(requestId) {
   const row = await dao.getRequest(requestId);
   if (!row) throw new Error('Request not found');
+  const budget = await dao.latestBudgetFor(requestId);
 
-  const payload = buildPayload(row);
+  const payload = buildPayload(row, budget);
   const salesOrderId = await dao.createSalesOrder({
     meal_request_id: requestId,
     payload: JSON.stringify(payload),

@@ -136,6 +136,7 @@ async function createBudget(data) {
 const latestBudgetFor = (mealRequestId) =>
   db('budget_requests').where({ meal_request_id: mealRequestId }).orderBy('id', 'desc').first();
 const getBudget = (id) => db('budget_requests').where({ id }).first();
+const updateBudget = (id, fields) => db('budget_requests').where({ id }).update(fields);
 
 // ── sales orders ───────────────────────────────────────
 async function createSalesOrder(data) {
@@ -161,6 +162,7 @@ module.exports = {
   createBudget,
   latestBudgetFor,
   getBudget,
+  updateBudget,
   createSalesOrder,
   updateSalesOrder,
   listSalesOrders

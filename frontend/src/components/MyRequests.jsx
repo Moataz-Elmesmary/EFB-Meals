@@ -3,13 +3,10 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { getMyRequests, createRequest, uploadBudget, fileUrl } from '../api';
 
-const STEPS = ['requested', 'budget_requested', 'budget_uploaded', 'ready_for_sap'];
+const STEPS = ['requested', 'budget_set', 'budget_uploaded', 'ready_for_sap'];
 
 function UploadBudget({ request, onDone }) {
   const { t } = useTranslation();
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('EGP');
-  const [vendor, setVendor] = useState('');
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -17,12 +14,8 @@ function UploadBudget({ request, onDone }) {
   const submit = async (e) => {
     e.preventDefault();
     setErr(null);
-    if (!amount || isNaN(parseFloat(amount))) return setErr(t('amountRequired'));
     if (!file) return setErr(t('attachmentRequired'));
     const fd = new FormData();
-    fd.append('amount', amount);
-    fd.append('currency', currency);
-    fd.append('vendor', vendor);
     fd.append('attachment', file);
     setBusy(true);
     try {
@@ -37,13 +30,9 @@ function UploadBudget({ request, onDone }) {
   return (
     <form onSubmit={submit} className="upload-budget">
       <div className="upload-title">📄 {t('uploadBudgetTitle')}</div>
-      <div className="upload-row">
-        <input type="number" min="0" step="0.01" placeholder={t('amountLabel')} value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-          <option>EGP</option><option>USD</option><option>EUR</option><option>SAR</option>
-        </select>
-        <input placeholder={t('vendorLabel')} value={vendor} onChange={(e) => setVendor(e.target.value)} />
-      </div>
+      {request.amount != null && (
+        <div className="required-budget">{t('requiredBudget')}: <b>{request.amount} {request.currency || 'EGP'}</b></div>
+      )}
       <label className={`file-drop ${file ? 'has-file' : ''}`} style={{ marginTop: 10 }}>
         {file ? `✅ ${file.name}` : `📎 ${t('chooseFile')}`}
         <input type="file" hidden onChange={(e) => setFile(e.target.files[0] || null)} />
@@ -118,7 +107,7 @@ export default function MyRequests() {
       ) : (
         <div className="req-list">
           {rows.map((r, i) => {
-            const needsUpload = r.status === 'budget_requested' || r.status === 'budget_rejected';
+            const needsUpload = r.status === 'budget_set';
             return (
               <motion.div key={r.id} className="req-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.04, 0.3) }}>
                 <div className="req-top">
@@ -138,16 +127,19 @@ export default function MyRequests() {
 
                 {itemsLine(r) ? <div className="items-line">🧾 {itemsLine(r)}</div> : null}
                 {r.kitchen_notes ? <div className="special-box">💬 {t('kitchenSays')}: {r.kitchen_notes}</div> : null}
-                {r.reject_reason && r.status === 'budget_rejected' ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {t('rejectedReason')}: {r.reject_reason}</div> : null}
+                {r.reject_reason ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {t('rejectedReason')}: {r.reject_reason}</div> : null}
 
                 {/* status timeline */}
                 <div className="timeline">
-                  {STEPS.map((s, idx) => (
-                    <div key={s} className={`tl-step ${idx <= stepIndex(r.status) && r.status !== 'budget_rejected' ? 'done' : ''}`}>
-                      <span className="tl-dot">{idx <= stepIndex(r.status) && r.status !== 'budget_rejected' ? '✓' : idx + 1}</span>
-                      <span className="tl-label">{t(`status_${s}`)}</span>
-                    </div>
-                  ))}
+                  {STEPS.map((s, idx) => {
+                    const done = r.status !== 'rejected' && idx <= stepIndex(r.status);
+                    return (
+                      <div key={s} className={`tl-step ${done ? 'done' : ''}`}>
+                        <span className="tl-dot">{done ? '✓' : idx + 1}</span>
+                        <span className="tl-label">{t(`status_${s}`)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {needsUpload && <UploadBudget request={r} onDone={load} />}
