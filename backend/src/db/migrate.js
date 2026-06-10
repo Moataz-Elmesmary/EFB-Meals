@@ -125,6 +125,74 @@ async function migrate() {
     });
     console.log('✓ created table: sales_orders');
   }
+
+  // ── SAP-mirrored reference data (synced from EFB_DB) ───────────────────────
+  // Items master (from dbo.Items). The menu is built from these.
+  if (!(await db.schema.hasTable('Items'))) {
+    await db.schema.createTable('Items', (t) => {
+      t.string('item_code', 60).primary();
+      t.string('item_name', 400);
+      t.bigInteger('classification'); // MainItemClassificationType
+      t.float('weight'); // grams
+      t.string('uom', 30);
+      t.float('qty_on_stock');
+      t.decimal('price', 14, 4).defaultTo(0); // default price-list price
+      t.boolean('is_active').defaultTo(true);
+      t.timestamp('synced_at');
+    });
+    console.log('✓ created table: Items');
+  }
+
+  // Item price lists (from dbo.Items_ItemPrices).
+  if (!(await db.schema.hasTable('Item_Prices'))) {
+    await db.schema.createTable('Item_Prices', (t) => {
+      t.increments('id').primary();
+      t.string('item_code', 60).index();
+      t.bigInteger('price_list');
+      t.decimal('price', 14, 4);
+    });
+    console.log('✓ created table: Item_Prices');
+  }
+
+  // Recipe header (from dbo.ProductTree).
+  if (!(await db.schema.hasTable('ProductTree'))) {
+    await db.schema.createTable('ProductTree', (t) => {
+      t.string('tree_code', 60).primary();
+      t.string('product_description', 400);
+      t.float('quantity'); // base quantity the recipe yields
+      t.string('tree_type', 60);
+      t.timestamp('synced_at');
+    });
+    console.log('✓ created table: ProductTree');
+  }
+
+  // Recipe lines (from dbo.ProductTree_ProductTreeLines).
+  if (!(await db.schema.hasTable('ProductTree_Lines'))) {
+    await db.schema.createTable('ProductTree_Lines', (t) => {
+      t.increments('id').primary();
+      t.string('tree_code', 60).index(); // ParentItem
+      t.bigInteger('child_num');
+      t.string('item_code', 60);
+      t.string('item_name', 400);
+      t.float('quantity');
+    });
+    console.log('✓ created table: ProductTree_Lines');
+  }
+
+  // Cost centers / departments (from sap_efb.CostCenter).
+  if (!(await db.schema.hasTable('CostCenters'))) {
+    await db.schema.createTable('CostCenters', (t) => {
+      t.string('code', 20).primary(); // PrcCode
+      t.string('name', 120); // PrcName
+      t.string('division', 120);
+      t.string('platform', 60);
+      t.string('programme', 80);
+      t.string('cc_type', 20);
+      t.boolean('active').defaultTo(true);
+      t.timestamp('synced_at');
+    });
+    console.log('✓ created table: CostCenters');
+  }
 }
 
 module.exports = migrate;

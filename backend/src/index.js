@@ -8,6 +8,7 @@ const fs = require('fs');
 
 const dao = require('./db');
 const sqlListener = require('./sqlListener');
+const itemSync = require('./integration/sync');
 
 const authRouter = require('./routes/auth');
 const requestsRouter = require('./routes/requests');
@@ -46,6 +47,7 @@ dao
     app.listen(PORT, () => {
       console.log(`Meals backend listening on port ${PORT}`);
       sqlListener.start();
+      itemSync.start();
     });
   })
   .catch((err) => {

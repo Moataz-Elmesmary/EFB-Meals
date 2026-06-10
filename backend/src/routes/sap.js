@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const dao = require('../db');
 const { pushRequestToSAP } = require('../sapService');
+const itemSync = require('../integration/sync');
+
+// Trigger an item/cost-center sync from the SAP mirror on demand.
+router.post('/sync', (req, res) => {
+  itemSync.runAll();
+  res.json({ ok: true, message: 'Sync started' });
+});
 
 // Manually (re)push a request to SAP as a Sales Order.
 router.post('/push/:requestId', async (req, res) => {
