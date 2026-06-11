@@ -146,18 +146,24 @@ export default function MyRequests({ onReorder }) {
                   {r.amount != null ? <span>💰 {r.amount} {r.currency}</span> : null}
                 </div>
 
-                {(r.items || []).some((i) => i.kind === 'suggested') && (
-                  <div className="items-group">
+                <div className="items-cols">
+                  <div className="items-group sug">
                     <div className="items-group-title">🙋 {t('suggestedItems')}</div>
-                    <div className="order-items">{itemList((r.items || []).filter((i) => i.kind === 'suggested'))}</div>
+                    <div className="order-items">
+                      {(r.items || []).some((i) => i.kind === 'suggested')
+                        ? itemList((r.items || []).filter((i) => i.kind === 'suggested'))
+                        : <div className="items-empty">{t('noneYet')}</div>}
+                    </div>
                   </div>
-                )}
-                {(r.items || []).some((i) => i.kind === 'requested') && (
-                  <div className="items-group">
+                  <div className="items-group fin">
                     <div className="items-group-title">✅ {t('finalItems')}</div>
-                    <div className="order-items">{itemList((r.items || []).filter((i) => i.kind === 'requested'))}</div>
+                    <div className="order-items">
+                      {(r.items || []).some((i) => i.kind === 'requested')
+                        ? itemList((r.items || []).filter((i) => i.kind === 'requested'))
+                        : <div className="items-empty">{t('notSetYet')}</div>}
+                    </div>
                   </div>
-                )}
+                </div>
 
                 {r.kitchen_notes ? <div className="special-box">💬 {t('kitchenSays')}: {r.kitchen_notes}</div> : null}
                 {r.reject_reason ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {t('rejectedReason')}: {r.reject_reason}</div> : null}
