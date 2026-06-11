@@ -95,12 +95,14 @@ async function migrate() {
       t.string('emoji', 16);
       t.integer('quantity').defaultTo(1);
       t.decimal('unit_price', 12, 2).defaultTo(0);
+      t.string('description', 500); // for off-menu special items
       t.string('kind', 20).defaultTo('suggested');
     });
     console.log('✓ created table: order_items');
   } else {
     for (const [col, def] of [
       ['item_code', (t) => t.string('item_code', 60)],
+      ['description', (t) => t.string('description', 500)],
       ['kind', (t) => t.string('kind', 20).defaultTo('suggested')]
     ]) {
       if (!(await db.schema.hasColumn('order_items', col))) {

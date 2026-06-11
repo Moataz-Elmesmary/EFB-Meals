@@ -50,7 +50,7 @@ router.post('/request', async (req, res) => {
       const qty = Math.max(1, parseInt(it.quantity, 10) || 1);
       if (it.special) {
         const text = String(it.meal_name || '').trim();
-        if (text) items.push({ item_code: null, meal_name: text, emoji: '✏️', quantity: qty, unit_price: 0, kind: 'suggested' });
+        if (text) items.push({ item_code: null, meal_name: text, description: it.description || '', emoji: '✏️', quantity: qty, unit_price: 0, kind: 'suggested' });
       } else if (it.item_code) {
         const m = await dao.getItem(it.item_code);
         if (m) items.push({ item_code: m.item_code, meal_name: m.item_name, emoji: '🍽️', quantity: qty, unit_price: m.price || 0, kind: 'suggested' });

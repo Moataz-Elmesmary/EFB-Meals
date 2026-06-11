@@ -66,6 +66,7 @@ async function insertItems(requestId, items, defaultKind) {
       meal_id: it.meal_id || null,
       item_code: it.item_code || null,
       meal_name: it.meal_name,
+      description: it.description || null,
       emoji: it.emoji || null,
       quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
       unit_price: it.unit_price || 0,

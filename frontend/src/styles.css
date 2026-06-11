@@ -206,6 +206,28 @@ a { color: inherit; }
   padding: 4px 10px; border-radius: var(--radius-full);
 }
 
+/* special-request 3-field row */
+.special-fields { display: grid; grid-template-columns: 1.4fr 1.6fr 70px auto; gap: 10px; }
+.special-fields input { min-height: 46px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; background: #fff; }
+.special-fields input:focus { outline: none; border-color: var(--gold-dark); box-shadow: 0 0 0 4px rgba(209,182,113,.2); }
+@media (max-width: 640px) { .special-fields { grid-template-columns: 1fr; } }
+
+/* searchable combobox */
+.combobox { position: relative; }
+.combobox-input { width: 100%; min-height: 48px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px 36px 12px 14px; background: var(--paper-2); }
+.combobox-input:focus { outline: none; border-color: var(--emerald); background: #fff; box-shadow: 0 0 0 4px rgba(8,86,72,.1); }
+.combobox-caret { position: absolute; top: 50%; inset-inline-end: 12px; transform: translateY(-50%); color: var(--ink-4); pointer-events: none; }
+.combobox-list { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; right: 0; max-height: 260px; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); }
+.combobox-item { padding: 10px 14px; cursor: pointer; font-size: .92rem; }
+.combobox-item:hover { background: var(--emerald-50); }
+.combobox-item.sel { background: var(--emerald-50); font-weight: 700; }
+.combobox-item.muted { color: var(--ink-4); cursor: default; }
+
+/* suggested vs final item groups */
+.items-group { margin-top: 12px; }
+.items-group-title { font-size: .82rem; font-weight: 800; color: var(--ink-3); margin-bottom: 6px; }
+.cart-desc { color: var(--ink-4); font-weight: 400; }
+
 /* ---------- Order details / items blocks ---------- */
 .block-title { font-size: 1.15rem; font-weight: 900; margin: 0; }
 .block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }

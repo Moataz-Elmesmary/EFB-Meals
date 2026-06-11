@@ -77,18 +77,23 @@ export default function MyRequests({ onReorder }) {
     flash(t('budgetSent'));
   };
 
-  const itemName = (it) => it.meal_name;
+  const itemList = (its) => its.map((it) => (
+    <div className="oi-row" key={it.id}>
+      <span className="oi-name">{it.kind === 'requested' && !it.item_code ? '📝' : it.emoji || '🍽️'} {it.meal_name}{it.description ? <small className="cart-desc"> — {it.description}</small> : null}</span>
+      <span className="oi-qty">× {it.quantity}</span>
+    </div>
+  ));
   const stepIndex = (s) => {
     const i = STEPS.indexOf(s);
     return i < 0 ? 0 : i;
   };
 
   const reorder = (r) => {
-    const items = (r.items || []).map((it, i) => {
-      if (it.special) return { key: `s${r.id}_${i}`, meal_id: null, name_en: it.meal_name, name_ar: it.meal_name, emoji: '✏️', quantity: it.quantity, special: true };
-      const parts = String(it.meal_name).split(' / ');
-      return { key: `m${it.meal_id}`, meal_id: it.meal_id, name_en: parts[0], name_ar: parts[1] || parts[0], emoji: it.emoji || '🍽️', quantity: it.quantity, special: false };
-    });
+    const items = (r.items || []).filter((it) => it.kind === 'suggested').map((it, i) =>
+      it.special
+        ? { key: `s${r.id}_${i}`, item_code: null, name: it.meal_name, description: it.description || '', quantity: it.quantity, special: true }
+        : { key: `i${it.item_code}`, item_code: it.item_code, name: it.meal_name, quantity: it.quantity, special: false }
+    );
     if (items.length) onReorder?.(items);
   };
 
@@ -131,21 +136,28 @@ export default function MyRequests({ onReorder }) {
                   </div>
                 </div>
 
-                <div className="order-items">
-                  {(r.items || []).map((it) => (
-                    <div className="oi-row" key={it.id}>
-                      <span className="oi-name">{it.special ? '📝' : it.emoji || '🍽️'} {itemName(it)}</span>
-                      <span className="oi-qty">× {it.quantity}</span>
-                    </div>
-                  ))}
-                </div>
-
                 <div className="order-meta">
+                  {r.type ? <span>🏷️ {t(`type_${r.type}`)}</span> : null}
+                  {r.classification ? <span>🍽️ {t(`class_${r.classification}`)}</span> : null}
+                  {r.location ? <span>📍 {r.location}</span> : null}
+                  <span>👥 {t('peopleShort')}: {r.people}</span>
                   {r.needed_date ? <span>📅 {r.needed_date}</span> : <span>📅 {t('asap')}</span>}
                   {r.needed_time ? <span>⏰ {r.needed_time}</span> : null}
-                  <span>🍴 {t('totalQty')}: {r.people}</span>
                   {r.amount != null ? <span>💰 {r.amount} {r.currency}</span> : null}
                 </div>
+
+                {(r.items || []).some((i) => i.kind === 'suggested') && (
+                  <div className="items-group">
+                    <div className="items-group-title">🙋 {t('suggestedItems')}</div>
+                    <div className="order-items">{itemList((r.items || []).filter((i) => i.kind === 'suggested'))}</div>
+                  </div>
+                )}
+                {(r.items || []).some((i) => i.kind === 'requested') && (
+                  <div className="items-group">
+                    <div className="items-group-title">✅ {t('finalItems')}</div>
+                    <div className="order-items">{itemList((r.items || []).filter((i) => i.kind === 'requested'))}</div>
+                  </div>
+                )}
 
                 {r.kitchen_notes ? <div className="special-box">💬 {t('kitchenSays')}: {r.kitchen_notes}</div> : null}
                 {r.reject_reason ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {t('rejectedReason')}: {r.reject_reason}</div> : null}

@@ -11,24 +11,37 @@ const email = require('./email');
 const { pushRequestToSAP } = require('./sapService');
 const T = require('./templates/emailTemplates');
 
-// Step 2 — kitchen approves the order and sets the required budget amount.
-async function setBudget(id, { amount, currency, vendor }) {
+// Step 2 — the kitchen reviews the order, enters the FINAL (requested) items +
+// quantities + a note, and sets the required budget. These items are what gets
+// recorded and (later) pushed to SAP — not the requester's suggestions.
+async function setBudget(id, { amount, currency, vendor, notes, items }) {
   const req = await dao.getRequest(id);
   if (!req) throw new Error('Request not found');
-  await dao.createBudget({
-    meal_request_id: id,
-    amount: parseFloat(amount),
-    currency: currency || 'EGP',
-    vendor: vendor || '',
-    created_by: 'kitchen'
-  });
-  await dao.updateRequest(id, { status: 'budget_set', reject_reason: '' });
+
+  // resolve the kitchen's requested items
+  const resolved = [];
+  for (const it of items || []) {
+    const qty = Math.max(1, parseInt(it.quantity, 10) || 1);
+    if (it.special) {
+      const text = String(it.meal_name || '').trim();
+      if (text) resolved.push({ item_code: null, meal_name: text, description: it.description || '', emoji: '✏️', quantity: qty, kind: 'requested' });
+    } else if (it.item_code) {
+      const m = await dao.getItem(it.item_code);
+      if (m) resolved.push({ item_code: m.item_code, meal_name: m.item_name, emoji: '🍽️', quantity: qty, unit_price: m.price || 0, kind: 'requested' });
+    }
+  }
+
+  await dao.createBudget({ meal_request_id: id, amount: parseFloat(amount), currency: currency || 'EGP', vendor: vendor || '', created_by: 'kitchen' });
+  if (resolved.length) await dao.replaceItems(id, resolved, 'requested');
+  await dao.updateRequest(id, { status: 'budget_set', reject_reason: '', kitchen_notes: notes || '' });
+
+  const fresh = await dao.getRequest(id);
   if (req.requester_email) {
     email
       .sendNotification(
         req.requester_email,
         `💰 Budget required #${id} — موازنة مطلوبة`,
-        T.budgetSetTemplate(req, { amount: parseFloat(amount), currency: currency || 'EGP' })
+        T.budgetSetTemplate(fresh, { amount: parseFloat(amount), currency: currency || 'EGP', notes })
       )
       .catch(() => {});
   }

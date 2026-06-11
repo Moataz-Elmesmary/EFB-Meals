@@ -110,7 +110,7 @@ function itemsTable(items) {
     .map(
       (it) => `
       <tr>
-        <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};font-size:14px;color:${BRAND.ink};">${it.special ? '📝 ' : (it.emoji ? it.emoji + ' ' : '')}${it.meal_name}</td>
+        <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};font-size:14px;color:${BRAND.ink};">${it.special ? '📝 ' : (it.emoji ? it.emoji + ' ' : '')}${it.meal_name}${it.description ? `<br><span style="color:${BRAND.inkSoft};font-size:12px;">${it.description}</span>` : ''}</td>
         <td style="padding:11px 14px;border-bottom:1px solid ${BRAND.greige};font-size:15px;font-weight:900;color:${BRAND.orangeDark};text-align:center;width:80px;">× ${it.quantity}</td>
       </tr>`
     )
@@ -168,17 +168,25 @@ function approveRejectButtons(approveUrl, rejectUrl) {
   <div style="text-align:center;font-size:11px;color:#9aa8a3;margin-top:10px;">القرار يُنفّذ فوراً · الرابط صالح 72 ساعة</div>`;
 }
 
-// To employee: the kitchen set the required budget → please upload the PDF.
+// To employee: the kitchen set the items + required budget → please upload the PDF.
 function budgetSetTemplate(req, budget) {
   const amount = budget && budget.amount != null ? `${Number(budget.amount).toLocaleString()} ${budget.currency || 'EGP'}` : '—';
+  const requested = (req.items || []).filter((i) => i.kind === 'requested');
+  const notesBox = budget && budget.notes
+    ? `<div style="background:${BRAND.paperSoft};border-inline-start:4px solid ${BRAND.orange};border-radius:12px;padding:12px 16px;margin-top:12px;color:${BRAND.ink};">📝 ${budget.notes}</div>`
+    : '';
   return layout({
     emoji: '💰',
     accent: BRAND.gold,
     chip: 'موازنة مطلوبة · Budget required',
     chipColor: BRAND.gold,
     title: 'تمت الموافقة على طلبك',
-    intro: 'وافق المطبخ على طلبك وحدّد الموازنة المطلوبة. من فضلك ارفع مستند الموازنة (PDF) من «طلباتي».<br>Your order is approved and the required budget is set. Please upload the budget document (PDF) from “My Requests”.',
-    content: totalBox('الموازنة المطلوبة · Required budget', amount) + ctaButton('⬆️ رفع مستند الموازنة · Upload budget', APP_URL, BRAND.orange)
+    intro: 'وافق المطبخ على طلبك وحدّد الأصناف والموازنة المطلوبة. من فضلك ارفع مستند الموازنة (PDF) من «طلباتي».<br>Your order is approved — here are the items & required budget. Please upload the budget PDF from “My Requests”.',
+    content:
+      (requested.length ? itemsTable(requested) + '<div style="height:12px"></div>' : '') +
+      totalBox('الموازنة المطلوبة · Required budget', amount) +
+      notesBox +
+      ctaButton('⬆️ رفع مستند الموازنة · Upload budget', APP_URL, BRAND.orange)
   });
 }
 

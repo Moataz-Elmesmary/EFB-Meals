@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import ItemsModal from './components/ItemsModal';
+import Combobox from './components/Combobox';
 import { createRequest, getItems, getCostCenters } from './api';
 
 const TYPES = ['supervisors', 'event', 'meeting'];
@@ -12,8 +13,8 @@ export default function RequestForm({ user, initialCart, onCartConsumed }) {
     type: '', classification: 'hot', department_code: '', location: '', people: 1,
     needed_date: '', needed_time: '', notes: ''
   });
-  const [cart, setCart] = useState([]); // { item_code|null, name, quantity, special }
-  const [specialText, setSpecialText] = useState('');
+  const [cart, setCart] = useState([]); // { item_code|null, name, description, quantity, special }
+  const [sp, setSp] = useState({ name: '', desc: '', qty: 1 });
   const [items, setItems] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [costCenters, setCostCenters] = useState([]);
@@ -62,10 +63,10 @@ export default function RequestForm({ user, initialCart, onCartConsumed }) {
       const cp = [...c]; cp[i] = { ...cp[i], quantity: cp[i].quantity - 1 }; return cp;
     });
   const addSpecial = () => {
-    const text = specialText.trim();
-    if (!text) return;
-    setCart((c) => [...c, { key: `s${Date.now()}`, item_code: null, name: text, quantity: 1, special: true }]);
-    setSpecialText('');
+    const name = sp.name.trim();
+    if (!name) return;
+    setCart((c) => [...c, { key: `s${Date.now()}`, item_code: null, name, description: sp.desc.trim(), quantity: Math.max(1, parseInt(sp.qty, 10) || 1), special: true }]);
+    setSp({ name: '', desc: '', qty: 1 });
   };
   const setQty = (key, q) => setCart((c) => c.map((x) => (x.key === key ? { ...x, quantity: Math.max(1, q) } : x)));
   const removeItem = (key) => setCart((c) => c.filter((x) => x.key !== key));
@@ -92,7 +93,7 @@ export default function RequestForm({ user, initialCart, onCartConsumed }) {
         needed_date: form.needed_date,
         needed_time: form.needed_time,
         notes: form.notes,
-        items: cart.map((i) => (i.special ? { special: true, meal_name: i.name, quantity: i.quantity } : { item_code: i.item_code, quantity: i.quantity }))
+        items: cart.map((i) => (i.special ? { special: true, meal_name: i.name, description: i.description, quantity: i.quantity } : { item_code: i.item_code, quantity: i.quantity }))
       });
       setStatus('success');
       setCart([]);
@@ -139,11 +140,13 @@ export default function RequestForm({ user, initialCart, onCartConsumed }) {
               </select>
             </div>
             <div className="field full">
-              <label>{t('deptLabel')} *</label>
-              <select value={form.department_code} onChange={(e) => set('department_code', e.target.value)} required>
-                <option value="">{t('choose')}</option>
-                {costCenters.map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}{c.division ? ` (${c.division})` : ''}</option>)}
-              </select>
+              <label>{t('deptLabel')} * <span className="hint">({t('searchHint')})</span></label>
+              <Combobox
+                value={form.department_code}
+                onChange={(v) => set('department_code', v)}
+                placeholder={t('choose')}
+                options={costCenters.map((c) => ({ value: c.code, label: `${c.code} — ${c.name}${c.division ? ` (${c.division})` : ''}` }))}
+              />
             </div>
             <div className="field">
               <label>{t('locationLabel')}</label>
@@ -189,10 +192,11 @@ export default function RequestForm({ user, initialCart, onCartConsumed }) {
                 <div className="special-card-sub">{t('specialCardSub')}</div>
               </div>
             </div>
-            <div className="special-add">
-              <input value={specialText} placeholder={t('specialLinePlaceholder')} onChange={(e) => setSpecialText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSpecial())} />
-              <button type="button" className="btn btn-ghost" onClick={addSpecial}>✏️ {t('addSpecialLine')}</button>
+            <div className="special-fields">
+              <input className="sf-name" value={sp.name} placeholder={t('itemNameLabel')} onChange={(e) => setSp({ ...sp, name: e.target.value })} />
+              <input className="sf-desc" value={sp.desc} placeholder={t('descriptionLabel')} onChange={(e) => setSp({ ...sp, desc: e.target.value })} />
+              <input className="sf-qty" type="number" min="1" value={sp.qty} placeholder={t('qtyLabel')} onChange={(e) => setSp({ ...sp, qty: e.target.value })} />
+              <button type="button" className="btn btn-orange" onClick={addSpecial}>＋ {t('addSpecialLine')}</button>
             </div>
           </div>
 
@@ -205,7 +209,7 @@ export default function RequestForm({ user, initialCart, onCartConsumed }) {
                 {cart.map((it) => (
                   <motion.div key={it.key} className="cart-row" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                     <span className="cart-emoji">{it.special ? '📝' : '🍽️'}</span>
-                    <span className="cart-name">{it.name}</span>
+                    <span className="cart-name">{it.name}{it.description ? <small className="cart-desc"> — {it.description}</small> : null}</span>
                     <div className="qty sm">
                       <button type="button" onClick={() => setQty(it.key, it.quantity - 1)}>−</button>
                       <input value={it.quantity} onChange={(e) => setQty(it.key, parseInt(e.target.value, 10) || 1)} />

@@ -25,14 +25,18 @@ router.get('/budget/:budgetId/file', async (req, res) => {
   }
 });
 
-// Step 2 — kitchen approves the order and sets the required budget amount.
+// Step 2 — kitchen approves the order, sets the FINAL (requested) items +
+// notes + the required budget amount. These items are what gets recorded.
 router.post('/set-budget/:id', async (req, res) => {
-  const { amount, currency, vendor } = req.body || {};
+  const { amount, currency, vendor, notes, items } = req.body || {};
   if (amount == null || amount === '' || isNaN(parseFloat(amount))) {
     return res.status(400).json({ error: 'A valid budget amount is required.' });
   }
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Add at least one item to record for this order.' });
+  }
   try {
-    res.json(await budgetFlow.setBudget(parseInt(req.params.id, 10), { amount, currency, vendor }));
+    res.json(await budgetFlow.setBudget(parseInt(req.params.id, 10), { amount, currency, vendor, notes, items }));
   } catch (e) {
     res.status(e.message === 'Request not found' ? 404 : 500).json({ error: e.message });
   }
@@ -58,7 +62,7 @@ router.post('/approve/:id', async (req, res) => {
   }
 });
 
-// Step 4 (alt) — kitchen rejects the uploaded document (employee re-uploads).
+// Step 4 (alt) — kitchen rejects the uploaded document (requester re-uploads).
 router.post('/reject/:id', async (req, res) => {
   const reason = (req.body && req.body.reason) || '';
   if (!reason.trim()) return res.status(400).json({ error: 'A rejection reason is required.' });
