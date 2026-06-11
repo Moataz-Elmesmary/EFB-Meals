@@ -4,50 +4,61 @@ const dao = require('../db');
 const email = require('../email');
 const { newRequestTemplate, requestConfirmationTemplate } = require('../templates/emailTemplates');
 
-// Public menu (active meals only)
-router.get('/meals', async (req, res) => {
+// Menu items for the requester, filtered by classification (ready | hot).
+router.get('/items', async (req, res) => {
   try {
-    res.json(await dao.listMeals());
+    res.json(await dao.listItemsByClass(req.query.classification));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// Create an order — a cart of items (each meal + quantity), and/or special
-// request lines, plus delivery date/time and an order note.
+// Departments / cost centers for the dropdown.
+router.get('/cost-centers', async (req, res) => {
+  try {
+    res.json(await dao.listCostCenters());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Legacy alias — keep /meals working (ready-to-eat items by default).
+router.get('/meals', async (req, res) => {
+  try {
+    res.json(await dao.listItemsByClass(req.query.classification || 'ready'));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Create an order. The requester provides order details + SUGGESTED items;
+// the kitchen later sets the actual (requested) items.
 router.post('/request', async (req, res) => {
-  const { requester_name, requester_email, department, phone, people, needed_date, needed_time, notes } = req.body;
+  const {
+    requester_name, requester_email, department, department_code, phone,
+    type, classification, location, people, needed_date, needed_time, notes
+  } = req.body;
 
   if (!requester_name || !requester_email) {
     return res.status(400).json({ error: 'Requester name and email are required.' });
   }
 
-  // Normalize to a cart, supporting the legacy single-meal payload + reorder.
-  let raw = Array.isArray(req.body.items) ? req.body.items : null;
-  if (!raw) {
-    if (req.body.meal_id) raw = [{ meal_id: req.body.meal_id, quantity: people }];
-    else if (req.body.special_request) raw = [{ special: true, meal_name: req.body.special_request, quantity: people }];
-  }
-  if (!raw || !raw.length) return res.status(400).json({ error: 'Add at least one item to the order.' });
-
+  const raw = Array.isArray(req.body.items) ? req.body.items : [];
   try {
     const items = [];
     for (const it of raw) {
       const qty = Math.max(1, parseInt(it.quantity, 10) || 1);
-      if (it.meal_id) {
-        const m = await dao.getMeal(it.meal_id);
-        if (!m) return res.status(400).json({ error: 'Selected meal does not exist.' });
-        items.push({ meal_id: m.id, meal_name: `${m.name_en} / ${m.name_ar}`, emoji: m.emoji, quantity: qty, unit_price: m.price || 0, special: false });
-      } else {
-        const text = String(it.meal_name || it.special_request || '').trim();
-        if (!text) continue;
-        items.push({ meal_id: null, meal_name: text, emoji: '✏️', quantity: qty, unit_price: 0, special: true });
+      if (it.special) {
+        const text = String(it.meal_name || '').trim();
+        if (text) items.push({ item_code: null, meal_name: text, emoji: '✏️', quantity: qty, unit_price: 0, kind: 'suggested' });
+      } else if (it.item_code) {
+        const m = await dao.getItem(it.item_code);
+        if (m) items.push({ item_code: m.item_code, meal_name: m.item_name, emoji: '🍽️', quantity: qty, unit_price: m.price || 0, kind: 'suggested' });
       }
     }
-    if (!items.length) return res.status(400).json({ error: 'Add at least one item to the order.' });
 
-    const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-    const summary = items.map((i) => `${i.meal_name} ×${i.quantity}`).join(' · ');
+    const headcount = Math.max(1, parseInt(people, 10) || 1);
+    const summary = items.length ? items.map((i) => `${i.meal_name} ×${i.quantity}`).join(' · ') : '—';
     const today = new Date().toISOString().slice(0, 10);
     const urgent = !needed_date || needed_date === today;
 
@@ -55,38 +66,31 @@ router.post('/request', async (req, res) => {
       requester_name,
       requester_email,
       department: department || '',
+      department_code: department_code || '',
       phone: phone || '',
+      type: type || '',
+      classification: classification || '',
+      location: location || '',
       meal_id: null,
       meal_name: summary,
-      is_special: items.every((i) => i.special),
+      is_special: false,
       special_request: '',
-      people: totalQty,
+      people: headcount,
       needed_date: needed_date || '',
       needed_time: needed_time || '',
       urgent,
       notes: notes || '',
-      status: 'requested' // kitchen reviews → sets budget or rejects
+      status: 'requested'
     };
 
     const id = await dao.createOrder(header, items);
     const reqRow = { id, ...header, items };
 
-    // notify kitchen
     email
-      .sendNotification(
-        process.env.KITCHEN_EMAIL || 'kitchen@efb.eg',
-        `🍽️ New Meal Request #${id} — طلب وجبة جديد`,
-        newRequestTemplate(reqRow)
-      )
+      .sendNotification(process.env.KITCHEN_EMAIL || 'kitchen@efb.eg', `🍽️ New Meal Request #${id} — طلب وجبة جديد`, newRequestTemplate(reqRow))
       .catch(() => {});
-
-    // confirmation to requester
     email
-      .sendNotification(
-        requester_email,
-        `✅ Order confirmation #${id} — تأكيد طلبك`,
-        requestConfirmationTemplate(reqRow)
-      )
+      .sendNotification(requester_email, `✅ Order confirmation #${id} — تأكيد طلبك`, requestConfirmationTemplate(reqRow))
       .catch(() => {});
 
     res.status(201).json({ id, status: 'requested' });

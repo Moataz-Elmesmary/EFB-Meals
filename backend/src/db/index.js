@@ -51,23 +51,47 @@ async function createMealRequest(data) {
   return typeof row === 'object' ? row.id : row;
 }
 
-// Create an order (header) plus its cart line items.
+// Create an order (header) plus its line items.
 async function createOrder(header, items) {
   const id = await createMealRequest(header);
-  if (items && items.length) {
-    await db('order_items').insert(
-      items.map((it) => ({
-        meal_request_id: id,
-        meal_id: it.meal_id || null,
-        meal_name: it.meal_name,
-        emoji: it.emoji || null,
-        quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
-        unit_price: it.unit_price || 0
-      }))
-    );
-  }
+  await insertItems(id, items, 'suggested');
   return id;
 }
+
+async function insertItems(requestId, items, defaultKind) {
+  if (!items || !items.length) return;
+  await db('order_items').insert(
+    items.map((it) => ({
+      meal_request_id: requestId,
+      meal_id: it.meal_id || null,
+      item_code: it.item_code || null,
+      meal_name: it.meal_name,
+      emoji: it.emoji || null,
+      quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+      unit_price: it.unit_price || 0,
+      kind: it.kind || defaultKind || 'suggested'
+    }))
+  );
+}
+
+// Replace the items of a given kind for a request (used by the kitchen for
+// 'requested' items).
+async function replaceItems(requestId, items, kind) {
+  await db('order_items').where({ meal_request_id: requestId, kind }).del();
+  await insertItems(requestId, items, kind);
+}
+
+// ── reference data (synced from SAP mirror) ────────────────
+const CLASS_MAP = { ready: 5, hot: 4 };
+const listItemsByClass = (classification) => {
+  const cls = CLASS_MAP[classification];
+  const q = db('Items').where({ is_active: true }).orderBy('item_name').select('item_code', 'item_name', 'price', 'classification', 'uom');
+  if (cls != null) q.where('classification', cls);
+  return q;
+};
+const getItem = (code) => db('Items').where({ item_code: code }).first();
+const listCostCenters = () =>
+  db('CostCenters').where({ active: true }).whereNotNull('name').orderBy('name').select('code', 'name', 'division');
 
 const getItems = (requestId) => db('order_items').where({ meal_request_id: requestId }).orderBy('id');
 
@@ -153,6 +177,11 @@ module.exports = {
   getMeal,
   createMealRequest,
   createOrder,
+  insertItems,
+  replaceItems,
+  listItemsByClass,
+  getItem,
+  listCostCenters,
   getItems,
   getRequest,
   kitchenRequests,

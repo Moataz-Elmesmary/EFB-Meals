@@ -3,6 +3,9 @@ import axios from 'axios';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
 export const getMeals = () => axios.get(`${API_BASE}/api/meals`).then((r) => r.data);
+export const getItems = (classification) =>
+  axios.get(`${API_BASE}/api/items`, { params: { classification } }).then((r) => r.data);
+export const getCostCenters = () => axios.get(`${API_BASE}/api/cost-centers`).then((r) => r.data);
 
 export const createRequest = (payload) =>
   axios.post(`${API_BASE}/api/request`, payload).then((r) => r.data);

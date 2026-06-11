@@ -198,7 +198,7 @@ export default function App() {
                   </div>
                 </div>
               </Reveal>
-              <Reveal delay={0.05}><RequestForm meals={meals} user={user} initialCart={reorderCart} onCartConsumed={() => setReorderCart(null)} /></Reveal>
+              <Reveal delay={0.05}><RequestForm user={user} initialCart={reorderCart} onCartConsumed={() => setReorderCart(null)} /></Reveal>
             </div>
           </section>
 

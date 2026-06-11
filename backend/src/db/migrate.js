@@ -60,7 +60,21 @@ async function migrate() {
       ['urgent', (t) => t.boolean('urgent').defaultTo(false)],
       ['notes', (t) => t.string('notes', 1000)],
       ['kitchen_notes', (t) => t.string('kitchen_notes', 1000)],
-      ['reject_reason', (t) => t.string('reject_reason', 1000)]
+      ['reject_reason', (t) => t.string('reject_reason', 1000)],
+      // Phase 2 — order details
+      ['type', (t) => t.string('type', 60)], // مشرفين | فعالية | اجتماع
+      ['classification', (t) => t.string('classification', 30)], // ready | hot
+      ['location', (t) => t.string('location', 300)],
+      ['department_code', (t) => t.string('department_code', 20)],
+      ['costcenter1', (t) => t.string('costcenter1', 20)],
+      ['costcenter2', (t) => t.string('costcenter2', 20)],
+      ['costcenter3', (t) => t.string('costcenter3', 20)],
+      ['costcenter4', (t) => t.string('costcenter4', 20)],
+      ['costcenter5', (t) => t.string('costcenter5', 20)],
+      // Phase 4 — SAP integration tracking (per request)
+      ['sap_document_number', (t) => t.bigInteger('sap_document_number').defaultTo(0)],
+      ['sap_integration_feedback', (t) => t.string('sap_integration_feedback', 1000)],
+      ['sap_number_of_try', (t) => t.integer('sap_number_of_try').defaultTo(0)]
     ]) {
       if (!(await db.schema.hasColumn('meal_requests', col))) {
         await db.schema.alterTable('meal_requests', def);
@@ -69,18 +83,31 @@ async function migrate() {
     }
   }
 
-  // Cart line items — one row per meal in an order, with its quantity.
+  // Order line items — one row per item. kind = 'suggested' (by requester) or
+  // 'requested' (the actual items the kitchen sets — these are recorded/pushed).
   if (!(await db.schema.hasTable('order_items'))) {
     await db.schema.createTable('order_items', (t) => {
       t.increments('id').primary();
       t.integer('meal_request_id').index();
       t.integer('meal_id');
+      t.string('item_code', 60);
       t.string('meal_name', 400);
       t.string('emoji', 16);
       t.integer('quantity').defaultTo(1);
       t.decimal('unit_price', 12, 2).defaultTo(0);
+      t.string('kind', 20).defaultTo('suggested');
     });
     console.log('✓ created table: order_items');
+  } else {
+    for (const [col, def] of [
+      ['item_code', (t) => t.string('item_code', 60)],
+      ['kind', (t) => t.string('kind', 20).defaultTo('suggested')]
+    ]) {
+      if (!(await db.schema.hasColumn('order_items', col))) {
+        await db.schema.alterTable('order_items', def);
+        console.log(`✓ added column: order_items.${col}`);
+      }
+    }
   }
 
   if (!(await db.schema.hasTable('budget_requests'))) {

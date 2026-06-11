@@ -132,6 +132,24 @@ function totalBox(label, value) {
 
 const money = (v) => (v == null ? '—' : `${Number(v).toLocaleString()} EGP`);
 const mealLabel = (r) => (r.is_special ? 'طلب خاص / Special request' : r.meal_name || `#${r.meal_id}`);
+const classLabel = (c) => (c === 'hot' ? 'وجبة ساخنة · Hot meal' : c === 'ready' ? 'جاهزة · Ready-to-eat' : '');
+
+// shared order-detail rows (requester + order meta)
+function orderRows(req) {
+  return [
+    ['رقم الطلب', 'Request #', `#${req.id}`],
+    ['مقدّم الطلب', 'Requester', `${req.requester_name}<br><span style="color:#56706a;font-weight:400;font-size:12px;">${req.requester_email}</span>`],
+    ['الإدارة', 'Department', req.department],
+    ['التليفون', 'Phone', req.phone],
+    ['نوع الطلب', 'Type', req.type],
+    ['التصنيف', 'Classification', classLabel(req.classification)],
+    ['المكان', 'Location', req.location],
+    ['عدد الأشخاص', 'People', req.people],
+    ['التاريخ المطلوب', 'Needed on', req.needed_date || 'في أقرب وقت / ASAP'],
+    ['وقت الاستلام', 'Delivery time', req.needed_time],
+    ['ملاحظات', 'Notes', req.notes]
+  ];
+}
 
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 
@@ -251,16 +269,7 @@ function kitchenNoteTemplate(req, note) {
 
 // 1) New request → kitchen
 function newRequestTemplate(req) {
-  const rows = [
-    ['رقم الطلب', 'Request #', `#${req.id}`],
-    ['مقدّم الطلب', 'Requester', `${req.requester_name}<br><span style="color:${BRAND.inkSoft};font-weight:400;font-size:12px;">${req.requester_email}</span>`],
-    ['الإدارة', 'Department', req.department],
-    ['التليفون', 'Phone', req.phone],
-    ['إجمالي الكمية', 'Total qty', req.people],
-    ['التاريخ المطلوب', 'Needed on', req.needed_date || 'في أقرب وقت / ASAP'],
-    ['وقت الاستلام', 'Delivery time', req.needed_time],
-    ['ملاحظات', 'Notes', req.notes]
-  ];
+  const rows = orderRows(req);
   const urgentBanner = req.urgent
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;"><tr>
          <td style="background:#fdecec;border:1px solid ${BRAND.melon};border-radius:12px;padding:12px 16px;color:${BRAND.melon};font-weight:800;font-size:14px;" dir="rtl" align="center">
@@ -285,12 +294,7 @@ function newRequestTemplate(req) {
 
 // 2) Confirmation → requester
 function requestConfirmationTemplate(req) {
-  const rows = [
-    ['رقم الطلب', 'Request #', `#${req.id}`],
-    ['التاريخ المطلوب', 'Needed on', req.needed_date || 'في أقرب وقت / ASAP'],
-    ['وقت الاستلام', 'Delivery time', req.needed_time],
-    ['ملاحظات', 'Notes', req.notes]
-  ];
+  const rows = orderRows(req);
   const waitNote = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr>
     <td style="background:${BRAND.goldLight};border-radius:12px;padding:14px 16px;color:#8a6d1f;" dir="rtl">
       <b>الخطوة الجاية:</b> المطبخ بيراجع طلبك وهيجهّزلك الموازنة المطلوبة — هنبعتلك تحديث قريب.<br>
