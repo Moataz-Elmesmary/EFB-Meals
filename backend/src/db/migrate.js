@@ -15,6 +15,20 @@ async function ensureSqliteDir() {
 async function migrate() {
   await ensureSqliteDir();
 
+  // Rename legacy tables to the agreed names (preserving data). Runs once.
+  const renames = [
+    ['meal_requests', 'main_requests'],
+    ['order_items', 'order_request_items'],
+    ['budget_requests', 'request_budget'],
+    ['sales_orders', 'sap_sales_orders']
+  ];
+  for (const [oldN, newN] of renames) {
+    if ((await db.schema.hasTable(oldN)) && !(await db.schema.hasTable(newN))) {
+      await db.schema.renameTable(oldN, newN);
+      console.log(`✓ renamed table ${oldN} → ${newN}`);
+    }
+  }
+
   if (!(await db.schema.hasTable('meals'))) {
     await db.schema.createTable('meals', (t) => {
       t.increments('id').primary();
@@ -30,8 +44,8 @@ async function migrate() {
     console.log('✓ created table: meals');
   }
 
-  if (!(await db.schema.hasTable('meal_requests'))) {
-    await db.schema.createTable('meal_requests', (t) => {
+  if (!(await db.schema.hasTable('main_requests'))) {
+    await db.schema.createTable('main_requests', (t) => {
       t.increments('id').primary();
       t.string('requester_name', 200);
       t.string('requester_email', 200).index();
@@ -52,7 +66,7 @@ async function migrate() {
       t.string('status', 30).defaultTo('requested').index();
       t.timestamp('created_at').defaultTo(db.fn.now());
     });
-    console.log('✓ created table: meal_requests');
+    console.log('✓ created table: main_requests');
   } else {
     for (const [col, def] of [
       ['phone', (t) => t.string('phone', 40)],
@@ -76,17 +90,17 @@ async function migrate() {
       ['sap_integration_feedback', (t) => t.string('sap_integration_feedback', 1000)],
       ['sap_number_of_try', (t) => t.integer('sap_number_of_try').defaultTo(0)]
     ]) {
-      if (!(await db.schema.hasColumn('meal_requests', col))) {
-        await db.schema.alterTable('meal_requests', def);
-        console.log(`✓ added column: meal_requests.${col}`);
+      if (!(await db.schema.hasColumn('main_requests', col))) {
+        await db.schema.alterTable('main_requests', def);
+        console.log(`✓ added column: main_requests.${col}`);
       }
     }
   }
 
   // Order line items — one row per item. kind = 'suggested' (by requester) or
   // 'requested' (the actual items the kitchen sets — these are recorded/pushed).
-  if (!(await db.schema.hasTable('order_items'))) {
-    await db.schema.createTable('order_items', (t) => {
+  if (!(await db.schema.hasTable('order_request_items'))) {
+    await db.schema.createTable('order_request_items', (t) => {
       t.increments('id').primary();
       t.integer('meal_request_id').index();
       t.integer('meal_id');
@@ -98,22 +112,22 @@ async function migrate() {
       t.string('description', 500); // for off-menu special items
       t.string('kind', 20).defaultTo('suggested');
     });
-    console.log('✓ created table: order_items');
+    console.log('✓ created table: order_request_items');
   } else {
     for (const [col, def] of [
       ['item_code', (t) => t.string('item_code', 60)],
       ['description', (t) => t.string('description', 500)],
       ['kind', (t) => t.string('kind', 20).defaultTo('suggested')]
     ]) {
-      if (!(await db.schema.hasColumn('order_items', col))) {
-        await db.schema.alterTable('order_items', def);
-        console.log(`✓ added column: order_items.${col}`);
+      if (!(await db.schema.hasColumn('order_request_items', col))) {
+        await db.schema.alterTable('order_request_items', def);
+        console.log(`✓ added column: order_request_items.${col}`);
       }
     }
   }
 
-  if (!(await db.schema.hasTable('budget_requests'))) {
-    await db.schema.createTable('budget_requests', (t) => {
+  if (!(await db.schema.hasTable('request_budget'))) {
+    await db.schema.createTable('request_budget', (t) => {
       t.increments('id').primary();
       t.integer('meal_request_id').index();
       t.decimal('amount', 12, 2);
@@ -127,24 +141,24 @@ async function migrate() {
       t.string('created_by', 200);
       t.timestamp('created_at').defaultTo(db.fn.now());
     });
-    console.log('✓ created table: budget_requests');
+    console.log('✓ created table: request_budget');
   } else {
     for (const [col, def] of [
       ['attachment_name', (t) => t.string('attachment_name', 300)],
       ['attachment_mime', (t) => t.string('attachment_mime', 120)],
       ['attachment_data', (t) => t.text('attachment_data')]
     ]) {
-      if (!(await db.schema.hasColumn('budget_requests', col))) {
-        await db.schema.alterTable('budget_requests', def);
-        console.log(`✓ added column: budget_requests.${col}`);
+      if (!(await db.schema.hasColumn('request_budget', col))) {
+        await db.schema.alterTable('request_budget', def);
+        console.log(`✓ added column: request_budget.${col}`);
       }
     }
   }
 
   // Local mirror of what we push to SAP. The real SAP Sales Order lives in the
   // SAP SQL Server (see sapService) — this row tracks our side + the returned id.
-  if (!(await db.schema.hasTable('sales_orders'))) {
-    await db.schema.createTable('sales_orders', (t) => {
+  if (!(await db.schema.hasTable('sap_sales_orders'))) {
+    await db.schema.createTable('sap_sales_orders', (t) => {
       t.increments('id').primary();
       t.integer('meal_request_id').index();
       t.string('sap_id', 100);
@@ -152,7 +166,7 @@ async function migrate() {
       t.text('payload');
       t.timestamp('created_at').defaultTo(db.fn.now());
     });
-    console.log('✓ created table: sales_orders');
+    console.log('✓ created table: sap_sales_orders');
   }
 
   // ── SAP-mirrored reference data (synced from EFB_DB) ───────────────────────

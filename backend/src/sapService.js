@@ -1,7 +1,7 @@
 // ───────────────────────────────────────────────────────────
 // SAP integration — turns a meal request into a Sales Order and pushes it to
 // SAP. Primary path: INSERT into the SAP SQL Server Sales Order table. Optional
-// path: POST to a SAP REST endpoint. A local sales_orders row tracks our side.
+// path: POST to a SAP REST endpoint. A local sap_sales_orders row tracks our side.
 // ───────────────────────────────────────────────────────────
 const mssql = require('mssql');
 const fetch = require('node-fetch');
@@ -112,7 +112,7 @@ async function pushRequestToSAP(requestId) {
 
 // Retry any sales orders that haven't reached SAP yet (called by sqlListener).
 async function retryPending() {
-  const pending = await dao.db('sales_orders').whereNull('sap_id').whereIn('status', ['pending', 'failed']);
+  const pending = await dao.db('sap_sales_orders').whereNull('sap_id').whereIn('status', ['pending', 'failed']);
   for (const so of pending) {
     try {
       const payload = JSON.parse(so.payload);
