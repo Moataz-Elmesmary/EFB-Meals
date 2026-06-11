@@ -70,6 +70,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: none; background: none; }
 a { color: inherit; }
 
+/* clean, consistent dropdown caret on every <select> */
+select {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2356706a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-size: 15px;
+}
+[dir="rtl"] select { background-position: left 14px center; padding-inline-start: 38px; }
+[dir="ltr"] select { background-position: right 14px center; padding-inline-end: 38px; }
+select:focus { outline: none; }
+
 /* ---------- App shell ---------- */
 .app-shell { min-height: 100vh; }
 .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
@@ -410,7 +420,7 @@ table.report tr:hover td { background: var(--paper-2); }
 
 /* ---------- Modal ---------- */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(8,30,28,.45); backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 100; padding: 20px; }
-.modal { background: #fff; border-radius: var(--radius-xl); padding: 28px; width: 100%; max-width: 480px; box-shadow: var(--shadow-xl); }
+.modal { background: #fff; border-radius: var(--radius-xl); padding: 28px; width: 100%; max-width: 480px; box-shadow: var(--shadow-xl); max-height: 90vh; overflow-y: auto; }
 .modal h3 { margin: 0 0 6px; font-size: 1.25rem; font-weight: 900; }
 .modal .sub { color: var(--ink-3); margin: 0 0 20px; font-size: .92rem; }
 
