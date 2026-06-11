@@ -27,18 +27,11 @@ function SetBudgetModal({ request, onClose, onSave }) {
   const [sp, setSp] = useState({ name: '', desc: '', qty: 1 });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
-  const [step, setStep] = useState(1);
 
   useEffect(() => {
     setItemsLoading(true);
     getItems(request.classification || 'hot').then(setItems).catch(() => setItems([])).finally(() => setItemsLoading(false));
   }, [request.classification]);
-
-  const goNext = () => {
-    if (!cart.length) return setErr(t('kitchenNeedsItems'));
-    setErr(null);
-    setStep(2);
-  };
 
   const inCart = (code) => cart.find((x) => x.item_code === code)?.quantity || 0;
   const addItem = (it) =>
@@ -84,73 +77,57 @@ function SetBudgetModal({ request, onClose, onSave }) {
       <motion.form className="modal items-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}
         initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}>
         <h3>💰 {t('setBudgetTitle')} — #{request.id}</h3>
+        <p className="sub">{t('setBudgetSub')}</p>
 
-        {/* stepper header */}
-        <div className="stepper">
-          <div className={`step ${step >= 1 ? 'active' : ''}`}><span className="step-dot">1</span> {t('finalItems')}</div>
-          <div className="step-line" />
-          <div className={`step ${step >= 2 ? 'active' : ''}`}><span className="step-dot">2</span> {t('budgetSection')}</div>
+        {/* ── 1) final items ── */}
+        <div className="block-head">
+          <div className="block-title" style={{ fontSize: '1rem' }}>🧾 {t('finalItems')}</div>
+          <button type="button" className="btn btn-orange btn-sm" onClick={() => setPicker(true)}>＋ {t('addFromMenu')}</button>
         </div>
 
-        {step === 1 && (
-          <div className="step-body">
-            <div className="block-head">
-              <div className="block-title" style={{ fontSize: '1rem' }}>🧾 {t('finalItems')}</div>
-              <button type="button" className="btn btn-orange btn-sm" onClick={() => setPicker(true)}>＋ {t('addFromMenu')}</button>
-            </div>
-
-            {cart.length === 0 ? (
-              <div className="cart-empty" style={{ marginTop: 10 }}>{t('kitchenNeedsItems')}</div>
-            ) : (
-              <div className="cart-list" style={{ marginTop: 10, maxHeight: '40vh', overflowY: 'auto' }}>
-                {cart.map((it) => (
-                  <div key={it.key} className="cart-row">
-                    <span className="cart-emoji">{it.special ? '📝' : '🍽️'}</span>
-                    <span className="cart-name">{it.name}{it.description ? <small className="cart-desc"> — {it.description}</small> : null}</span>
-                    <div className="qty sm">
-                      <button type="button" onClick={() => setQty(it.key, it.quantity - 1)}>−</button>
-                      <input value={it.quantity} onChange={(e) => setQty(it.key, parseInt(e.target.value, 10) || 1)} />
-                      <button type="button" onClick={() => setQty(it.key, it.quantity + 1)}>+</button>
-                    </div>
-                    <button type="button" className="cart-remove" onClick={() => removeItem(it.key)}>✕</button>
-                  </div>
-                ))}
+        {cart.length === 0 ? (
+          <div className="cart-empty" style={{ marginTop: 10 }}>{t('kitchenNeedsItems')}</div>
+        ) : (
+          <div className="cart-list" style={{ marginTop: 10, maxHeight: '30vh', overflowY: 'auto' }}>
+            {cart.map((it) => (
+              <div key={it.key} className="cart-row">
+                <span className="cart-emoji">{it.special ? '📝' : '🍽️'}</span>
+                <span className="cart-name">{it.name}{it.description ? <small className="cart-desc"> — {it.description}</small> : null}</span>
+                <div className="qty sm">
+                  <button type="button" onClick={() => setQty(it.key, it.quantity - 1)}>−</button>
+                  <input value={it.quantity} onChange={(e) => setQty(it.key, parseInt(e.target.value, 10) || 1)} />
+                  <button type="button" onClick={() => setQty(it.key, it.quantity + 1)}>+</button>
+                </div>
+                <button type="button" className="cart-remove" onClick={() => removeItem(it.key)}>✕</button>
               </div>
-            )}
-
-            <div className="special-fields" style={{ marginTop: 12 }}>
-              <input className="sf-name" value={sp.name} placeholder={t('itemNameLabel')} onChange={(e) => setSp({ ...sp, name: e.target.value })} />
-              <input className="sf-desc" value={sp.desc} placeholder={t('descriptionLabel')} onChange={(e) => setSp({ ...sp, desc: e.target.value })} />
-              <input className="sf-qty" type="number" min="1" value={sp.qty} onChange={(e) => setSp({ ...sp, qty: e.target.value })} />
-              <button type="button" className="btn btn-ghost" onClick={addSpecial}>＋ {t('addBtn')}</button>
-            </div>
-
-            {err && <div className="alert alert-error" style={{ marginTop: 12 }}>⚠️ {err}</div>}
-            <div style={{ display: 'flex', gap: 12, marginTop: 18, justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-ghost" onClick={onClose}>{t('cancel')}</button>
-              <button type="button" className="btn btn-primary" onClick={goNext}>{t('next')} →</button>
-            </div>
+            ))}
           </div>
         )}
 
-        {step === 2 && (
-          <div className="step-body">
-            <div className="block-title" style={{ fontSize: '1rem', marginBottom: 10 }}>💰 {t('budgetSection')}</div>
-            <div className="form-grid">
-              <div className="field"><label>{t('amountLabel')} *</label><input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
-              <div className="field"><label>{t('currencyLabel')}</label><select value={currency} onChange={(e) => setCurrency(e.target.value)}><option>EGP</option><option>USD</option><option>EUR</option><option>SAR</option></select></div>
-              <div className="field full"><label>{t('vendorLabel')}</label><input value={vendor} onChange={(e) => setVendor(e.target.value)} /></div>
-              <div className="field full"><label>{t('notesLabel')}</label><textarea style={{ minHeight: 64 }} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-            </div>
-            <div className="recap">{t('finalItems')}: <b>{cart.reduce((s, i) => s + i.quantity, 0)}</b> ({cart.length})</div>
+        <div className="special-fields" style={{ marginTop: 12 }}>
+          <input className="sf-name" value={sp.name} placeholder={t('itemNameLabel')} onChange={(e) => setSp({ ...sp, name: e.target.value })}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSpecial(); } }} />
+          <input className="sf-desc" value={sp.desc} placeholder={t('descriptionLabel')} onChange={(e) => setSp({ ...sp, desc: e.target.value })}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSpecial(); } }} />
+          <input className="sf-qty" type="number" min="1" value={sp.qty} onChange={(e) => setSp({ ...sp, qty: e.target.value })} />
+          <button type="button" className="btn btn-ghost" onClick={addSpecial}>＋ {t('addBtn')}</button>
+        </div>
 
-            {err && <div className="alert alert-error" style={{ marginTop: 12 }}>⚠️ {err}</div>}
-            <div style={{ display: 'flex', gap: 12, marginTop: 18, justifyContent: 'space-between' }}>
-              <button type="button" className="btn btn-ghost" onClick={() => setStep(1)}>← {t('back')}</button>
-              <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? <span className="spinner" /> : '✓'} {t('setBudgetSend')}</button>
-            </div>
-          </div>
-        )}
+        {/* ── 2) budget ── */}
+        <div className="modal-divider" />
+        <div className="block-title" style={{ fontSize: '1rem', marginBottom: 10 }}>💰 {t('budgetSection')}</div>
+        <div className="form-grid">
+          <div className="field"><label>{t('amountLabel')} *</label><input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          <div className="field"><label>{t('currencyLabel')}</label><select value={currency} onChange={(e) => setCurrency(e.target.value)}><option>EGP</option><option>USD</option><option>EUR</option><option>SAR</option></select></div>
+          <div className="field full"><label>{t('vendorLabel')}</label><input value={vendor} onChange={(e) => setVendor(e.target.value)} /></div>
+          <div className="field full"><label>{t('notesLabel')}</label><textarea style={{ minHeight: 64 }} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+        </div>
+
+        {err && <div className="alert alert-error" style={{ marginTop: 12 }}>⚠️ {err}</div>}
+        <div style={{ display: 'flex', gap: 12, marginTop: 18, justifyContent: 'flex-end' }}>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{t('cancel')}</button>
+          <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? <span className="spinner" /> : '✓'} {t('setBudgetSend')}</button>
+        </div>
 
         <AnimatePresence>
           {picker && <ItemsModal items={items} loading={itemsLoading} inCart={inCart} onAdd={addItem} onDec={decItem} onClose={() => setPicker(false)} />}
