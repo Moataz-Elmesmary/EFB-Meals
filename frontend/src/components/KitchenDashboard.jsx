@@ -300,18 +300,16 @@ export default function KitchenDashboard() {
                     {r.amount != null ? <span>💰 {r.amount} {r.currency}</span> : null}
                   </div>
 
-                  {suggested.length > 0 && (
-                    <div className="items-group">
+                  <div className="items-cols">
+                    <div className="items-group sug">
                       <div className="items-group-title">🙋 {t('suggestedByRequester')}</div>
-                      <div className="order-items">{itemList(suggested)}</div>
+                      <div className="order-items">{suggested.length ? itemList(suggested) : <div className="items-empty">{t('noneYet')}</div>}</div>
                     </div>
-                  )}
-                  {requested.length > 0 && (
-                    <div className="items-group">
+                    <div className="items-group fin">
                       <div className="items-group-title">✅ {t('finalItems')}</div>
-                      <div className="order-items">{itemList(requested)}</div>
+                      <div className="order-items">{requested.length ? itemList(requested) : <div className="items-empty">{t('notSetYet')}</div>}</div>
                     </div>
-                  )}
+                  </div>
 
                   {r.notes ? <div className="special-box">📝 {r.notes}</div> : null}
                   {r.reject_reason ? <div className="special-box" style={{ borderColor: 'var(--danger)' }}>❌ {r.reject_reason}</div> : null}
