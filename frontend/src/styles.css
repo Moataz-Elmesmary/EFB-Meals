@@ -216,11 +216,14 @@ select:focus { outline: none; }
   padding: 4px 10px; border-radius: var(--radius-full);
 }
 
-/* special-request 3-field row */
-.special-fields { display: grid; grid-template-columns: 1.4fr 1.6fr 70px auto; gap: 10px; }
-.special-fields input { min-height: 46px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; background: #fff; }
+/* special-request fields — wrap gracefully, never overflow the modal */
+.special-fields { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.special-fields input { min-height: 46px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; background: #fff; min-width: 0; }
 .special-fields input:focus { outline: none; border-color: var(--gold-dark); box-shadow: 0 0 0 4px rgba(209,182,113,.2); }
-@media (max-width: 640px) { .special-fields { grid-template-columns: 1fr; } }
+.special-fields .sf-name { flex: 1 1 140px; }
+.special-fields .sf-desc { flex: 2 1 180px; }
+.special-fields .sf-qty { flex: 0 0 70px; text-align: center; }
+.special-fields .btn { flex: 0 0 auto; }
 
 /* searchable combobox */
 .combobox { position: relative; }
@@ -420,7 +423,9 @@ table.report tr:hover td { background: var(--paper-2); }
 
 /* ---------- Modal ---------- */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(8,30,28,.45); backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 100; padding: 20px; }
-.modal { background: #fff; border-radius: var(--radius-xl); padding: 28px; width: 100%; max-width: 480px; box-shadow: var(--shadow-xl); max-height: 90vh; overflow-y: auto; }
+.modal { background: #fff; border-radius: var(--radius-xl); padding: 28px; width: 100%; max-width: 480px; box-shadow: var(--shadow-xl); max-height: 90vh; overflow-y: auto; overflow-x: hidden; }
+.modal .form-grid { grid-template-columns: 1fr 1fr; }
+.modal .field input, .modal .field select, .modal .field textarea { min-width: 0; }
 .modal h3 { margin: 0 0 6px; font-size: 1.25rem; font-weight: 900; }
 .modal .sub { color: var(--ink-3); margin: 0 0 20px; font-size: .92rem; }
 

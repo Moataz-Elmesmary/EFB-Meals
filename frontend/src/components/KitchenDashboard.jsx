@@ -108,7 +108,7 @@ function SetBudgetModal({ request, onClose, onSave }) {
           <input className="sf-name" value={sp.name} placeholder={t('itemNameLabel')} onChange={(e) => setSp({ ...sp, name: e.target.value })} />
           <input className="sf-desc" value={sp.desc} placeholder={t('descriptionLabel')} onChange={(e) => setSp({ ...sp, desc: e.target.value })} />
           <input className="sf-qty" type="number" min="1" value={sp.qty} onChange={(e) => setSp({ ...sp, qty: e.target.value })} />
-          <button type="button" className="btn btn-ghost" onClick={addSpecial}>＋</button>
+          <button type="button" className="btn btn-ghost" onClick={addSpecial}>＋ {t('addBtn')}</button>
         </div>
 
         <div className="form-grid" style={{ marginTop: 14 }}>
