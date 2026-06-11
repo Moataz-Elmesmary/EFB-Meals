@@ -111,7 +111,9 @@ function SetBudgetModal({ request, onClose, onSave }) {
           <button type="button" className="btn btn-ghost" onClick={addSpecial}>＋ {t('addBtn')}</button>
         </div>
 
-        <div className="form-grid" style={{ marginTop: 14 }}>
+        <div className="modal-divider" />
+        <div className="block-title" style={{ fontSize: '1rem', marginBottom: 6 }}>💰 {t('budgetSection')}</div>
+        <div className="form-grid">
           <div className="field"><label>{t('amountLabel')} *</label><input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
           <div className="field"><label>{t('currencyLabel')}</label><select value={currency} onChange={(e) => setCurrency(e.target.value)}><option>EGP</option><option>USD</option><option>EUR</option><option>SAR</option></select></div>
           <div className="field full"><label>{t('vendorLabel')}</label><input value={vendor} onChange={(e) => setVendor(e.target.value)} /></div>

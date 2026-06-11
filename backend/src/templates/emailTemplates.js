@@ -212,20 +212,17 @@ function budgetUploadedTemplate(req, budget, links) {
   });
 }
 
-function budgetApprovedTemplate(req) {
-  const rows = [
-    ['رقم الطلب', 'Request #', `#${req.id}`],
-    ['الوجبة', 'Meal', mealLabel(req)],
-    ['عدد الأفراد', 'People', req.people]
-  ];
+function budgetApprovedTemplate(req, budget) {
+  const requested = (req.items || []).filter((i) => i.kind === 'requested');
+  const amount = budget && budget.amount != null ? `${Number(budget.amount).toLocaleString()} ${budget.currency || 'EGP'}` : null;
   return layout({
     emoji: '🎉',
     accent: BRAND.sapling,
     chip: 'تم الاعتماد · Approved',
     chipColor: BRAND.emerald,
-    title: 'تم اعتماد الموازنة',
-    intro: 'تم اعتماد الموازنة، والمطبخ بدأ تجهيز طلبك. 🧑‍🍳<br>Your budget is approved — the kitchen is now preparing your order.',
-    content: itemsTable(req.items) || detailsTable(rows)
+    title: 'تم اعتماد طلبك',
+    intro: 'اعتُمدت الموازنة والمطبخ بدأ تجهيز طلبك. ده اللي هيوصلك: 🧑‍🍳<br>Your order is approved. Here is what you will get:',
+    content: itemsTable(requested) + (amount ? totalBox('الموازنة · Budget', amount) : '')
   });
 }
 
@@ -293,7 +290,7 @@ function newRequestTemplate(req) {
     intro: 'وصل طلب جديد بالأصناف والكميات التالية. افتح الأبليكيشن للموافقة وتحديد الموازنة أو الرفض.<br>A new order — open the app to approve & set the budget, or reject.',
     content:
       urgentBanner +
-      itemsTable(req.items) +
+      itemsTable((req.items || []).filter((i) => i.kind !== 'requested')) +
       `<div style="height:14px"></div>` +
       detailsTable(rows) +
       ctaButton('🍳 افتح الأبليكيشن · Open the app', APP_URL, BRAND.emerald)
@@ -315,7 +312,7 @@ function requestConfirmationTemplate(req) {
     chipColor: BRAND.emerald,
     title: 'تأكيد طلبك',
     intro: `أهلاً ${req.requester_name || ''}، استلمنا طلبك 🧑‍🍳<br>We got your order — here's what you asked for.`,
-    content: itemsTable(req.items) + `<div style="height:12px"></div>` + detailsTable(rows) + waitNote
+    content: itemsTable((req.items || []).filter((i) => i.kind !== 'requested')) + `<div style="height:12px"></div>` + detailsTable(rows) + waitNote
   });
 }
 

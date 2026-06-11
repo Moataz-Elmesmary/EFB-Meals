@@ -71,7 +71,7 @@ async function approve(id) {
   await dao.updateRequest(id, { status: 'ready_for_sap' });
   if (req.requester_email) {
     email
-      .sendNotification(req.requester_email, `🎉 Order confirmed #${id} — طلبك اكتمل`, T.budgetApprovedTemplate(req))
+      .sendNotification(req.requester_email, `🎉 Order confirmed #${id} — طلبك اكتمل`, T.budgetApprovedTemplate(req, budget))
       .catch(() => {});
   }
   return { status: 'ready_for_sap', ...sap };
