@@ -128,7 +128,7 @@ async function kitchenRequests() {
     .leftJoin('meals as m', 'm.id', 'mr.meal_id')
     .leftJoin(latest, 'lb.meal_request_id', 'mr.id')
     .leftJoin('request_budget as b', 'b.id', 'lb.bid')
-    .orderBy('mr.created_at', 'desc')
+    .orderBy('mr.id', 'desc')
     .select(
       'mr.*', 'm.name_en', 'm.name_ar', 'm.emoji',
       'b.id as budget_id', 'b.amount', 'b.currency', 'b.vendor',
@@ -148,7 +148,7 @@ async function requestsByEmail(email) {
     .leftJoin(latest, 'lb.meal_request_id', 'mr.id')
     .leftJoin('request_budget as b', 'b.id', 'lb.bid')
     .whereRaw('LOWER(mr.requester_email) = ?', [String(email || '').toLowerCase()])
-    .orderBy('mr.created_at', 'desc')
+    .orderBy('mr.id', 'desc')
     .select('mr.*', 'm.name_en', 'm.name_ar', 'm.emoji', 'b.amount', 'b.currency', 'b.attachment_path');
   return withItems(rows);
 }

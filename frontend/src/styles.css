@@ -356,6 +356,14 @@ table.report tr:hover td { background: var(--paper-2); }
 .kpi:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .kpi.active { border-color: var(--emerald); box-shadow: 0 0 0 2px var(--emerald) inset, var(--shadow); }
 .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--emerald-50); border: 1px solid var(--emerald-100); border-radius: var(--radius); padding: 9px 16px; margin-bottom: 16px; font-weight: 700; color: var(--ink-2); }
+
+/* kitchen filter chips + sort */
+.kitchen-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { padding: 8px 16px; border-radius: var(--radius-full); font-weight: 700; font-size: .88rem; background: #fff; border: 1.5px solid var(--border); color: var(--ink-3); transition: all .15s var(--ease-out); }
+.chip:hover { border-color: var(--emerald); color: var(--emerald); }
+.chip.active { background: var(--emerald); border-color: var(--emerald); color: #fff; box-shadow: var(--shadow-sm); }
+.sort-select { min-height: 42px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 8px 14px; background: #fff; font-weight: 700; color: var(--ink-2); }
 .kpi .num { font-size: 1.8rem; font-weight: 900; }
 .kpi .lbl { color: var(--ink-3); font-size: .85rem; font-weight: 700; margin-top: 4px; }
 .kpi.k-new .num { color: var(--orange); }

@@ -171,6 +171,7 @@ export default function KitchenDashboard() {
   const [budgetFor, setBudgetFor] = useState(null);
   const [reason, setReason] = useState(null);
   const [filter, setFilter] = useState(null);
+  const [sort, setSort] = useState('newest');
 
   const load = async () => {
     setLoading(true);
@@ -184,7 +185,12 @@ export default function KitchenDashboard() {
     requests.forEach((r) => { c[r.status] = (c[r.status] || 0) + 1; });
     return c;
   }, [requests]);
-  const filtered = useMemo(() => (filter ? requests.filter((r) => r.status === filter) : requests), [requests, filter]);
+  const filtered = useMemo(() => {
+    let list = filter ? requests.filter((r) => r.status === filter) : requests.slice();
+    if (sort === 'oldest') list = list.slice().reverse();
+    else if (sort === 'urgent') list = list.slice().sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+    return list;
+  }, [requests, filter, sort]);
 
   const run = async (id, fn) => {
     setBusyId(id);
@@ -240,12 +246,20 @@ export default function KitchenDashboard() {
           </button>
         ))}
       </div>
-      {filter && (
-        <div className="filter-bar">
-          <span>{t('filtering')}: <b>{t(`status_${filter}`)}</b></span>
-          <button className="btn btn-ghost btn-sm" onClick={() => setFilter(null)}>✕ {t('clearFilter')}</button>
+      <div className="kitchen-toolbar">
+        <div className="chips">
+          {[null, 'requested', 'budget_set', 'budget_uploaded', 'ready_for_sap', 'rejected'].map((st) => (
+            <button key={st || 'all'} className={`chip ${filter === st ? 'active' : ''}`} onClick={() => setFilter(st)}>
+              {st ? t(`status_${st}`) : t('allF')}
+            </button>
+          ))}
         </div>
-      )}
+        <select className="sort-select" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="newest">{t('sortNewest')}</option>
+          <option value="oldest">{t('sortOldest')}</option>
+          <option value="urgent">{t('sortUrgent')}</option>
+        </select>
+      </div>
 
       {loading ? (
         <div className="empty"><div className="big">⏳</div></div>
