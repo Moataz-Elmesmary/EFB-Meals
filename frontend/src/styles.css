@@ -158,18 +158,19 @@ select:focus { outline: none; }
 
 /* ---------- Buttons ---------- */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-  padding: 14px 26px; border-radius: var(--radius); font-weight: 800; font-size: .98rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 42px; padding: 0 20px; border-radius: var(--radius); font-weight: 700; font-size: .9rem;
   transition: transform .18s var(--ease-spring), box-shadow .2s var(--ease-out), background .2s;
 }
 .btn:active { transform: scale(.97); }
-.btn-primary { background: linear-gradient(135deg, var(--emerald), var(--emerald-700)); color: #fff; box-shadow: var(--shadow-emerald); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 44px rgba(8,86,72,.38); }
-.btn-orange { background: linear-gradient(135deg, var(--orange), var(--orange-dark)); color: #fff; box-shadow: var(--shadow-orange); }
-.btn-orange:hover { transform: translateY(-2px); }
+.btn-primary { background: linear-gradient(135deg, var(--emerald), var(--emerald-700)); color: #fff; box-shadow: var(--shadow-sm); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-orange { background: linear-gradient(135deg, var(--orange), var(--orange-dark)); color: #fff; box-shadow: var(--shadow-sm); }
+.btn-orange:hover { transform: translateY(-1px); }
 .btn-ghost { background: #fff; color: var(--emerald); border: 1px solid var(--border); }
 .btn-ghost:hover { border-color: var(--emerald); }
-.btn-sm { padding: 9px 16px; font-size: .86rem; border-radius: var(--radius-sm); }
+/* small action buttons — all the same height so card actions line up */
+.btn-sm { min-height: 36px; padding: 0 14px; font-size: .82rem; border-radius: var(--radius-sm); }
 .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
 
 /* ---------- Stats strip ---------- */
@@ -179,10 +180,10 @@ select:focus { outline: none; }
 .stat .lbl { color: var(--ink-3); font-size: .85rem; font-weight: 600; margin-top: 2px; }
 
 /* ---------- Sections ---------- */
-.section { padding: 48px 0; }
+.section { padding: 32px 0; }
 .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
-.section-title { font-size: 1.6rem; font-weight: 900; margin: 0; }
-.section-sub { color: var(--ink-3); margin: 6px 0 0; font-size: .98rem; }
+.section-title { font-size: 1.3rem; font-weight: 800; margin: 0; }
+.section-sub { color: var(--ink-3); margin: 4px 0 0; font-size: .88rem; }
 
 /* ---------- Menu cards ---------- */
 .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 20px; }
@@ -367,7 +368,7 @@ table.report tr:hover td { background: var(--paper-2); }
 
 /* ---------- Kitchen dashboard ---------- */
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
-.kpi { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); cursor: pointer; font: inherit; text-align: start; width: 100%; transition: transform .15s var(--ease-out), box-shadow .2s, border-color .2s; }
+.kpi { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 16px; box-shadow: var(--shadow-sm); cursor: pointer; font: inherit; text-align: start; width: 100%; transition: transform .15s var(--ease-out), box-shadow .2s, border-color .2s; }
 .kpi:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .kpi.active { border-color: var(--emerald); box-shadow: 0 0 0 2px var(--emerald) inset, var(--shadow); }
 .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--emerald-50); border: 1px solid var(--emerald-100); border-radius: var(--radius); padding: 9px 16px; margin-bottom: 16px; font-weight: 700; color: var(--ink-2); }
@@ -379,22 +380,22 @@ table.report tr:hover td { background: var(--paper-2); }
 .chip:hover { border-color: var(--emerald); color: var(--emerald); }
 .chip.active { background: var(--emerald); border-color: var(--emerald); color: #fff; box-shadow: var(--shadow-sm); }
 .sort-select { min-height: 42px; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 8px 14px; background: #fff; font-weight: 700; color: var(--ink-2); }
-.kpi .num { font-size: 1.8rem; font-weight: 900; }
-.kpi .lbl { color: var(--ink-3); font-size: .85rem; font-weight: 700; margin-top: 4px; }
+.kpi .num { font-size: 1.4rem; font-weight: 900; }
+.kpi .lbl { color: var(--ink-3); font-size: .8rem; font-weight: 700; margin-top: 2px; }
 .kpi.k-new .num { color: var(--orange); }
 .kpi.k-budget .num { color: var(--gold-dark); }
 .kpi.k-ready .num { color: var(--success); }
 .kpi.k-all .num { color: var(--emerald); }
 
 .req-list { display: grid; gap: 14px; }
-.req-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; box-shadow: var(--shadow-sm); transition: box-shadow .2s; }
+.req-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); transition: box-shadow .2s; }
 .req-card:hover { box-shadow: var(--shadow); }
 .req-top { display: flex; align-items: center; gap: 14px; }
 .req-emoji { font-size: 38px; }
 .req-main { flex: 1; min-width: 0; }
 .req-title { font-weight: 800; font-size: 1.02rem; }
 .req-meta { color: var(--ink-3); font-size: .85rem; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.req-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.req-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 
 .badge { font-size: .76rem; font-weight: 800; padding: 5px 12px; border-radius: var(--radius-full); white-space: nowrap; }
 .badge-requested { background: var(--orange-light); color: var(--orange-dark); }
@@ -411,7 +412,7 @@ table.report tr:hover td { background: var(--paper-2); }
 
 /* organized order card (kitchen) */
 .order-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.order-id { font-size: 1.1rem; font-weight: 800; }
+.order-id { font-size: 1rem; font-weight: 800; }
 .order-id b { color: var(--emerald); }
 .order-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 .order-requester { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--ink-3); font-size: .88rem; margin-top: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
