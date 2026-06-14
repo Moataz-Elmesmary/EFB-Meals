@@ -46,6 +46,35 @@ Keeps the app's menu/recipes/departments identical to SAP.
 
 ---
 
+### Data source map — where each table comes from
+
+> Source: `EFB_DB` (the SAP mirror, kept in sync with SAP by the org's IntegrationUser).
+
+**Synced FROM SAP (every 10 min):**
+| Our table (EFBMeals) | Source (EFB_DB) | Filter | Mode |
+|---|---|---|---|
+| `Items` | `dbo.Items` (ItemCode, ItemName, MainItemClassificationType, Weight, UOM, QuantityOnStock, IsActive) | `ItemCode IS NOT NULL` + de-dupe | upsert by `item_code` |
+| `Item_Prices` | `dbo.Items_ItemPrices` ⋈ `dbo.Items` on `_id` (PriceList, Price) | `Items.ItemCode IS NOT NULL` | full refresh |
+| `ProductTree` | `dbo.ProductTree` (TreeCode, ProductDescription, Quantity, TreeType) | `TreeCode IS NOT NULL` | upsert by `tree_code` |
+| `ProductTree_Lines` | `dbo.ProductTree_ProductTreeLines` (ParentItem, ChildNum, ItemCode, ItemName, Quantity) | rows with a parent tree | full refresh |
+| `CostCenters` | `sap_efb.CostCenter` (PrcCode, PrcName, U_Division, U_Platform, U_Programme, CCTypeCode, Active) | rows with PrcCode; `active = Active in (Y,1)` | upsert by `code` |
+
+- `Items.price` is set from `Item_Prices` for price list `SAP_DEFAULT_PRICE_LIST` (default 1).
+- `classification` 4 = Hot, 5 = Ready (used to filter the menu).
+
+**Created IN-APP (not from SAP):**
+| Table | Created by | Pulls values from |
+|---|---|---|
+| `main_requests` | website (requester submits, kitchen updates) | department/code from `CostCenters`; SAP tracking fields written by the outbound middleware |
+| `order_request_items` | website — `suggested` (requester), `requested` (kitchen) | `item_code` references `Items` |
+| `request_budget` | kitchen (amount) + requester (PDF) | — |
+| `sap_sales_orders` | outbound middleware (staging/audit) | — |
+| `meals` | legacy seed (unused since `Items` drives the menu) | — |
+
+**Outbound:** `main_requests` + `order_request_items (requested)` + `request_budget` → mapped → posted to the **SAP API** as a document; off-menu specials are create/update-by-code on SAP.
+
+---
+
 ## Workstream 3 — Authentication (Microsoft SSO)
 
 **Steps delivered**
