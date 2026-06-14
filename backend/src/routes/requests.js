@@ -13,10 +13,28 @@ router.get('/items', async (req, res) => {
   }
 });
 
-// Departments / cost centers for the dropdown.
+// Departments (DimCode = 3) for the dropdown.
 router.get('/cost-centers', async (req, res) => {
   try {
-    res.json(await dao.listCostCenters());
+    res.json(await dao.listDepartments());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Programmes (DimCode = 5) — second dropdown next to the department.
+router.get('/programmes', async (req, res) => {
+  try {
+    res.json(await dao.listProgrammes());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Recipe for a meal item (ProductTree). Shown when the item is a meal (not ready-to-eat).
+router.get('/recipe/:code', async (req, res) => {
+  try {
+    res.json((await dao.getRecipe(req.params.code)) || null);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

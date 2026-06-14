@@ -32,13 +32,15 @@ async function fullRefresh(table, rows) {
 
 async function syncCostCenters() {
   const rows = await src.query(
-    'SELECT PrcCode, PrcName, U_Division, U_Platform, U_Programme, CCTypeCode, Active FROM sap_efb.CostCenter'
+    'SELECT PrcCode, PrcName, DimCode, GrpCode, U_Division, U_Platform, U_Programme, CCTypeCode, Active FROM sap_efb.CostCenter'
   );
   const mapped = rows
     .filter((r) => r.PrcCode)
     .map((r) => ({
       code: String(r.PrcCode),
       name: r.PrcName || null,
+      dim_code: r.DimCode != null ? Number(r.DimCode) : null,
+      grp_code: r.GrpCode != null ? String(r.GrpCode) : null,
       division: r.U_Division || null,
       platform: r.U_Platform || null,
       programme: r.U_Programme || null,
@@ -51,13 +53,15 @@ async function syncCostCenters() {
 
 async function syncItems() {
   const rows = await src.query(
-    'SELECT ItemCode, ItemName, MainItemClassificationType, Weight, UOM, QuantityOnStock, IsActive FROM dbo.Items WHERE ItemCode IS NOT NULL'
+    'SELECT ItemCode, ItemName, MainItemClassificationType, U_ItemClassification, Weight, U_Weight, UOM, QuantityOnStock, IsActive FROM dbo.Items WHERE ItemCode IS NOT NULL'
   );
   const mapped = rows.map((r) => ({
     item_code: String(r.ItemCode),
     item_name: r.ItemName || null,
     classification: r.MainItemClassificationType != null ? Number(r.MainItemClassificationType) : null,
+    u_classification: r.U_ItemClassification != null ? String(r.U_ItemClassification) : null,
     weight: r.Weight || 0,
+    u_weight: r.U_Weight || 0,
     uom: r.UOM != null ? String(r.UOM) : null,
     qty_on_stock: r.QuantityOnStock || 0,
     is_active: r.IsActive === 1 || r.IsActive === '1',

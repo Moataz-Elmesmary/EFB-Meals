@@ -83,16 +83,32 @@ async function replaceItems(requestId, items, kind) {
 }
 
 // ── reference data (synced from SAP mirror) ────────────────
-const CLASS_MAP = { ready: 5, hot: 4 };
+// U_ItemClassification: 4 = hot meal, 5 = ready-to-eat.
+const CLASS_MAP = { ready: '5', hot: '4' };
 const listItemsByClass = (classification) => {
   const cls = CLASS_MAP[classification];
-  const q = db('Items').where({ is_active: true }).orderBy('item_name').select('item_code', 'item_name', 'price', 'classification', 'uom');
-  if (cls != null) q.where('classification', cls);
+  const q = db('Items').where({ is_active: true }).orderBy('item_name')
+    .select('item_code', 'item_name', 'price', 'classification', 'u_classification', 'uom');
+  if (cls != null) q.where('u_classification', cls);
   return q;
 };
 const getItem = (code) => db('Items').where({ item_code: code }).first();
-const listCostCenters = () =>
-  db('CostCenters').where({ active: true }).whereNotNull('name').orderBy('name').select('code', 'name', 'division');
+
+// Departments (DimCode = 3) and Programmes (DimCode = 5) for the requester form.
+const listDepartments = () =>
+  db('CostCenters').where({ active: true, dim_code: 3 }).whereNotNull('name').orderBy('name').select('code', 'name', 'division');
+const listProgrammes = () =>
+  db('CostCenters').where({ active: true, dim_code: 5 }).whereNotNull('name').orderBy('name').select('code', 'name');
+// kept for back-compat — now returns departments (DimCode = 3)
+const listCostCenters = listDepartments;
+
+// Recipe for an item (ProductTree.TreeCode = Items.ItemCode).
+async function getRecipe(itemCode) {
+  const header = await db('ProductTree').where({ tree_code: itemCode }).first();
+  if (!header) return null;
+  const lines = await db('ProductTree_Lines').where({ tree_code: itemCode }).orderBy('child_num');
+  return { ...header, lines };
+}
 
 const getItems = (requestId) => db('order_request_items').where({ meal_request_id: requestId }).orderBy('id');
 
@@ -207,6 +223,9 @@ module.exports = {
   listItemsByClass,
   getItem,
   listCostCenters,
+  listDepartments,
+  listProgrammes,
+  getRecipe,
   getItems,
   getRequest,
   kitchenRequests,

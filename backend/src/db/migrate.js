@@ -176,7 +176,9 @@ async function migrate() {
       t.string('item_code', 60).primary();
       t.string('item_name', 400);
       t.bigInteger('classification'); // MainItemClassificationType
+      t.string('u_classification', 20); // U_ItemClassification (4=hot meal, 5=ready, …)
       t.float('weight'); // grams
+      t.float('u_weight'); // U_Weight
       t.string('uom', 30);
       t.float('qty_on_stock');
       t.decimal('price', 14, 4).defaultTo(0); // default price-list price
@@ -184,6 +186,16 @@ async function migrate() {
       t.timestamp('synced_at');
     });
     console.log('✓ created table: Items');
+  } else {
+    for (const [col, def] of [
+      ['u_classification', (t) => t.string('u_classification', 20)],
+      ['u_weight', (t) => t.float('u_weight')]
+    ]) {
+      if (!(await db.schema.hasColumn('Items', col))) {
+        await db.schema.alterTable('Items', def);
+        console.log(`✓ added column: Items.${col}`);
+      }
+    }
   }
 
   // Item price lists (from dbo.Items_ItemPrices).
@@ -227,6 +239,8 @@ async function migrate() {
     await db.schema.createTable('CostCenters', (t) => {
       t.string('code', 20).primary(); // PrcCode
       t.string('name', 120); // PrcName
+      t.integer('dim_code'); // 3=department, 5=programme, 1/2=auto
+      t.string('grp_code', 20);
       t.string('division', 120);
       t.string('platform', 60);
       t.string('programme', 80);
@@ -235,6 +249,16 @@ async function migrate() {
       t.timestamp('synced_at');
     });
     console.log('✓ created table: CostCenters');
+  } else {
+    for (const [col, def] of [
+      ['dim_code', (t) => t.integer('dim_code')],
+      ['grp_code', (t) => t.string('grp_code', 20)]
+    ]) {
+      if (!(await db.schema.hasColumn('CostCenters', col))) {
+        await db.schema.alterTable('CostCenters', def);
+        console.log(`✓ added column: CostCenters.${col}`);
+      }
+    }
   }
 }
 
