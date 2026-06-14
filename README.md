@@ -30,13 +30,15 @@
 
 | | |
 |---|---|
-| 🛒 **Cart ordering** | Add multiple meals with per-item quantities, plus free-text special-request lines |
+| 🛒 **Requester suggests** | Order details (type · classification · department · location · people) + suggested meals from a searchable menu, or a 3-field special request (name · description · qty) |
+| 👨‍🍳 **Kitchen records the final order** | The kitchen enters the **actual recorded items + quantities + budget** — these (not the suggestions) are what gets stored and pushed to SAP |
 | 🔐 **Mandatory Microsoft SSO** | Identity (name, email, department, phone) auto-read from Active Directory via Graph |
-| 💸 **Budget workflow** | Kitchen requests a budget → employee uploads the PDF → kitchen **approves / rejects (with reason)** — from the app **or straight from the email** |
+| 💸 **Budget workflow** | Kitchen sets the budget → employee uploads the PDF → kitchen **approves / rejects (with reason)** — from the app **or straight from the email** |
+| 🔄 **Reference data sync (SAP → app)** | Items, prices, recipes (ProductTree) & cost-centers mirrored from `EFB_DB` every 10 min — **create/update by code** |
+| 🔗 **SAP outbound middleware** | A scheduled job maps each approved request → posts it to the **SAP API (user/password)** → writes back `document_number` / `feedback` / `number_of_try` (with retry) |
 | 📧 **Branded automated emails** | Sent from `efb.apps@efb.eg` via Microsoft Graph, bilingual, with item tables & PDF attachments |
 | 🧾 **My Requests** | Live status timeline, reorder in one tap, kitchen notes & rejection reasons |
 | 📊 **Reports** | Searchable/filterable table, total budget, attachment download, CSV export |
-| 🔗 **SAP sync** | Each approved order is pushed to a SQL Server Sales-Order table (with retry) |
 | 🎨 **Premium UI** | Aurora background, cinematic login, parallax hero, smooth-scroll, EFB brand palette |
 | 🌍 **Arabic + English** | Full RTL/LTR with one-tap switch |
 
@@ -56,19 +58,21 @@
 
 ```mermaid
 flowchart LR
-    A([👤 Employee<br/>builds a cart]) --> B[🍽️ Order created]
+    A([👤 Employee<br/>suggests items + details]) --> B[🍽️ Request created]
     B --> C{{📧 Kitchen notified}}
-    C --> D[👨‍🍳 Kitchen:<br/>Request budget]
+    C --> D[👨‍🍳 Kitchen records the<br/>FINAL items + sets budget]
     D --> E([📧 Employee asked<br/>to upload budget PDF])
-    E --> F[⬆️ Employee uploads<br/>PDF + amount]
+    E --> F[⬆️ Employee uploads PDF]
     F --> G{{📧 Kitchen gets PDF<br/>+ Approve / Reject}}
-    G -->|✅ Approve| H[🎉 Approved]
+    G -->|✅ Approve| H[🎉 ready_for_sap]
     G -->|❌ Reject + reason| E
-    H --> I[(🔗 SAP Sales Order)]
-    H --> J([📧 Employee:<br/>order is ready])
+    H --> M[[⚙️ SAP middleware:<br/>map → push → update]]
+    M --> I[(🔗 SAP document)]
+    H --> J([📧 Employee:<br/>order confirmed])
 ```
 
 Approve / Reject works **inside the app** and **from the email** (signed, 72-hour action links).
+The SAP push is a **middleware sweep**: it picks up requests with `sap_document_number = 0`, posts them, and stamps back the returned document number (`number_of_try += 1` each attempt; failures retry next sweep).
 
 ---
 
@@ -83,18 +87,22 @@ flowchart TB
     R[REST API]
     DAO[Knex DAO]
     MAIL[Graph mailer]
-    SAPS[SAP service]
+    SYNC[⏱️ Inbound sync<br/>every 10 min]
+    SOUT[⚙️ SAP middleware<br/>get → map → push → update]
   end
   subgraph Ext["☁️ External"]
     AAD[(Microsoft Entra ID<br/>SSO + Graph)]
-    DB[(SQLite dev / SQL Server prod)]
-    SAP[(SAP SQL Server<br/>Sales Order)]
+    DB[(EFBMeals<br/>SQLite dev / SQL Server prod)]
+    SRC[(EFB_DB mirror<br/>items · recipes · cost-centers)]
+    SAP[(SAP API<br/>Service Layer)]
   end
   UI -->|axios + Bearer| R
   R --> DAO --> DB
   R --> MAIL --> AAD
   UI -->|MSAL| AAD
-  R --> SAPS --> SAP
+  SRC -->|create/update by code| SYNC --> DB
+  SOUT -->|user/password| SAP
+  SOUT --> DB
 ```
 
 ---
@@ -136,7 +144,12 @@ Open **http://localhost:5173** 🎉
 | `MAIL_FROM` | Shared mailbox that sends mail (`efb.apps@efb.eg`) |
 | `KITCHEN_EMAIL` | Mailbox that receives new orders |
 | `MAIL_REDIRECT` | **Test mode** — reroute every email to one tester |
-| `SAP_MSSQL_*` / `SAP_SALESORDER_TABLE` | SAP Sales-Order target |
+| `SOURCE_DB` | Mirror DB the reference data is synced from (default `EFB_DB`) |
+| `SYNC_INTERVAL_MIN` | How often items/recipes/cost-centers are pulled (default `10`) |
+| `SAP_API_URL` / `SAP_API_USER` / `SAP_API_PASS` / `SAP_COMPANY_DB` | SAP API (Service Layer) outbound — **user/password** auth |
+| `SAP_DOC_TYPE` | SAP document to create (`Orders`, `ProductionOrders`, …) |
+| `SAP_OUT_INTERVAL_MIN` | How often the outbound middleware sweeps (default `5`) |
+| `SAP_DRY_RUN` | `true` simulates SAP (fake doc numbers) to test the whole loop |
 
 ---
 
@@ -170,16 +183,19 @@ node scripts/test-graph.js   # verify token, profile read & mail send
 EFB-Meals/
 ├── backend/
 │   ├── src/
-│   │   ├── index.js            # app entry, route mounting, DB init
+│   │   ├── index.js            # app entry, route mounting, DB init, schedulers
 │   │   ├── db/                 # knex.js · migrate.js · seed.js · index.js (DAO)
 │   │   ├── routes/             # auth · requests · budget · kitchen · sap
-│   │   ├── budgetService.js    # request/approve/reject/note (app + email)
-│   │   ├── sapService.js       # build & push Sales Orders (+ retry)
+│   │   ├── budgetService.js    # set-budget / approve / reject / note (app + email)
+│   │   ├── integration/
+│   │   │   ├── sapSource.js    # read-only connection to the EFB_DB mirror
+│   │   │   ├── sync.js         # INBOUND: items/prices/recipes/cost-centers (create/update by code)
+│   │   │   ├── sapClient.js    # SAP API client (Service Layer, user/password, dry-run)
+│   │   │   └── sapOut.js       # OUTBOUND middleware: get → map → push → update
 │   │   ├── graph.js            # Graph token, sendMail, getUser
 │   │   ├── email.js            # Graph → SMTP → simulate (+ test redirect)
 │   │   ├── actionToken.js      # signed approve/reject email links
 │   │   └── templates/          # branded bilingual email templates
-│   └── sql/sap_salesorder.sql  # SAP landing table DDL
 └── frontend/
     └── src/
         ├── App.jsx
@@ -192,13 +208,15 @@ EFB-Meals/
 
 ## 🗺️ Roadmap
 
-- [x] Cart with quantities + special lines
+- [x] Requester suggestions + kitchen-recorded final items & budget
 - [x] Budget upload → approve/reject (app + email)
 - [x] Branded bilingual Graph emails
-- [x] SAP Sales-Order sync
+- [x] Reference-data sync from SAP mirror (create/update by code)
+- [x] SAP outbound middleware (map → push → write back doc/feedback/try)
+- [ ] Live SAP API credentials + final field mapping
+- [ ] Recipe explosion to ingredients (lineQty × N ÷ batch) on push
 - [ ] Cost centers with monthly budgets + consumption reports
 - [ ] Post-delivery rating (stars + comment, 12h after delivery)
-- [ ] Recurring / scheduled orders
 
 ---
 
