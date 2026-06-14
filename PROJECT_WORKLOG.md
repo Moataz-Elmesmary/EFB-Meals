@@ -1,89 +1,153 @@
-# EFB Meals — Project Worklog (for Teamflect tasks / goals & appraisal)
+# EFB Meals — Project Worklog (End-to-End)
 
-> Ready-to-paste breakdown of the project, how it was delivered, and the value.
-> Each **Task** can be added to Teamflect as a task; each **Goal** as a goal/OKR.
+A complete, step-by-step account of the project for Teamflect tasks/goals and performance review.
+**Repo:** https://github.com/Moataz-Elmesmary/EFB-Meals · branch `main`.
 
----
+**What it is:** a bilingual (AR/EN) meal-ordering platform for the Egyptian Food Bank. Employees suggest meals; the kitchen records the final order and budget; budgets are uploaded and approved; approved orders are pushed to SAP. Microsoft SSO, automated emails, and a SAP reference-data sync run throughout.
 
-## 1) Project summary — ملخص المشروع
-
-**EFB Meals** — تطبيق ويب ثنائي اللغة (عربي/إنجليزي) لطلب الوجبات داخل بنك الطعام المصري.
-- الموظف يقترح وجبات (من قائمة من الساب أو طلب خاص) ويحدّد تفاصيل الطلب.
-- المطبخ يسجّل **الأصناف الفعلية + الكميات + الموازنة** (دي اللي بتتسجّل وتروح للساب).
-- الموظف يرفع مستند الموازنة (PDF) → المطبخ يوافق/يرفض من **التطبيق أو الإيميل**.
-- ربط كامل مع **SAP** (سحب الأصناف/الوصفات/مراكز التكلفة + رفع الطلبات المعتمدة) و **Microsoft SSO + Graph email**.
-
-**Stack:** React 18 + Vite · Node/Express · Knex (SQL Server) · Microsoft Entra ID (MSAL + Graph) · SAP Service Layer · i18next (AR/EN).
-**Repo:** https://github.com/Moataz-Elmesmary/EFB-Meals (branch `main`).
+**Stack:** React 18 + Vite · Node/Express · Knex (SQL Server / SQLite) · Microsoft Entra ID (MSAL + Graph) · SAP Service Layer · i18next.
 
 ---
 
-## 2) How we worked — منهجية الشغل
+## Workstream 1 — SQL Database & Schema
 
-- **Phased delivery (4 مراحل بالترتيب)** — كل مرحلة مبنية على اللي قبلها.
-- **Push after every piece** — كل جزء يتعمله commit + push على GitHub أول بأول.
-- **Reverse-engineered the real SAP data model** — اتصلنا بالـSQL Server الإنتاجي وفهمنا الموديل الحقيقي (الأصناف/الوصفات/مراكز التكلفة) وبنينا عليه.
-- **Test-driven against live data + dry-run** — كل مرحلة اتجرّبت على الداتا الفعلية، والربط مع الساب اتجرّب end-to-end بوضع simulation قبل الـcredentials الحقيقية.
-- **Iterative UI tuning** — جولات تحسين على الواجهة حسب الـfeedback (كثافة/ألوان/تنسيق).
+A SQL Server database (`EFBMeals`) with an idempotent migration that runs on every boot (works on SQLite for dev too).
 
----
+**Application tables (linked by request id):**
+| Table | Role | Links |
+|---|---|---|
+| `main_requests` | Order header — requester, type, classification, department(+code), location, people, status, `costcenter1..5`, SAP tracking fields | parent |
+| `order_request_items` | Order lines — one row per item; `kind` = `suggested` (requester) or `requested` (kitchen, recorded) | → `main_requests` |
+| `request_budget` | Budget per request — amount, currency, vendor, notes, the uploaded PDF (on disk + base64 in DB) | → `main_requests` |
+| `sap_sales_orders` | Local staging/audit of what was pushed to SAP | → `main_requests` |
 
-## 3) Delivery breakdown — التفصيل كـ Tasks / Goals
+**SAP reference tables (mirrored from SAP — see Workstream 2):**
+`Items`, `Item_Prices`, `ProductTree` (recipe header), `ProductTree_Lines` (recipe lines), `CostCenters` (departments).
 
-### 🟩 Phase 0 — Foundation & brand (✅ Done)
-- **Task:** Scaffold the app (Express API on :4000, React/Vite on :5173) on a port separate from Fleet.
-- **Task:** Brand system mirroring EFB Fleet (emerald/orange/gold, Cairo font), aurora background, cinematic login, smooth-scroll.
-- **Task:** Bilingual AR/EN with full RTL/LTR switch (i18next).
-- **Task:** Microsoft SSO (MSAL) + Graph email from `efb.apps@efb.eg`; **test mode** that reroutes all mail to one tester.
-
-### 🟩 Phase 1 — SAP data model mirror + inbound sync (✅ Done)
-- **Goal:** The app reads its reference data from the same model as SAP so the two stay in sync.
-- **Task:** Created mirror tables — `Items`, `Item_Prices`, `ProductTree`, `ProductTree_Lines`, `CostCenters`.
-- **Task:** Read-only connection to the `EFB_DB` mirror; scheduled sync every 10 min.
-- **Task:** **Create/update by code** — look up each item code; insert if new, update if exists (same for prices, recipes, cost-centers).
-- **Verified live:** 1,247 items · 12,469 prices · 273 recipes · 245 cost-centers.
-
-### 🟩 Phase 2 — Requester experience (✅ Done)
-- **Task:** Order details form — type (supervisors/event/meeting), classification (hot/ready), **searchable department**, location, number of people.
-- **Task:** Suggested items from a searchable menu popup (filtered by classification), pulled from the synced SAP items.
-- **Task:** Off-menu special request as **3 fields** (name · description · quantity).
-- **Task:** Confirmation email to the requester + new-order email to the kitchen (bilingual, item tables).
-
-### 🟩 Phase 3 — Kitchen records the final order + budget (✅ Done)
-- **Goal:** What gets recorded & billed is the kitchen's decision, not the raw request.
-- **Task:** Kitchen form to enter the **final (recorded) items + quantities + notes + budget**.
-- **Task:** Status flow — `requested → budget_set → budget_uploaded → ready_for_sap` (+ reject paths).
-- **Task:** Employee uploads the budget PDF; kitchen approves/rejects **from the app or the email** (signed 72-hour links).
-- **Task:** Branded emails for every step with the correct items + budget + PDF attachment.
-- **Task:** Kitchen dashboard — KPI cards, filter chips (new/budget/review/completed/rejected), sort (newest/oldest/urgent).
-
-### 🟩 Phase 4 — SAP outbound integration middleware (✅ Built, dry-run verified)
-- **Goal:** Every approved request reaches SAP automatically and reliably, with full traceability.
-- **Task:** Tracking fields per request — `sap_document_number` (0 until pushed), `sap_integration_feedback`, `sap_number_of_try`.
-- **Task:** Middleware job (`sapOut`) — **GET** pending (doc = 0) → **MAP** to a SAP document (items, quantities, budget, costcenter1..5, PDF) → **PUSH** via the SAP API → **UPDATE by id** (document number on success, feedback always, try += 1; failures retry next sweep).
-- **Task:** SAP API client (`sapClient`) — Service Layer style, **user/password** auth, auto re-login, plus **create/update item by code** for off-menu specials.
-- **Task:** `SAP_DRY_RUN` mode — simulates SAP to test the whole loop without credentials. **Verified end-to-end.**
-- **Pending (needs IT):** real SAP API URL / user / password / company DB / document type + final field mapping.
-
-### 🟦 Cross-cutting (✅ Done)
-- **Task:** Renamed tables to the agreed model with **zero data loss** (`main_requests`, `order_request_items`, `request_budget`, `sap_sales_orders`).
-- **Task:** Reports — searchable/filterable table, total budget, attachment download, CSV export, department filter.
-- **Task:** UI density & accessibility pass — uniform button sizes, calmer palette, fixed number-input scroll bug, newest-first ordering, two-column item layout (suggestion vs final).
-- **Task:** Fancy bilingual README + architecture/flow diagrams; continuous GitHub pushes.
+**Steps delivered**
+1. Designed the schema to mirror SAP's real model (verified by inspecting the production SQL Server).
+2. Built an **idempotent migration** — creates tables/columns only if missing; safe to re-run.
+3. Added SAP tracking columns to the header: `sap_document_number` (0 = not pushed), `sap_integration_feedback`, `sap_number_of_try`, plus `costcenter1..5`.
+4. **Renamed** legacy tables to the agreed names with **zero data loss** (`meal_requests→main_requests`, etc.) via a rename migration.
+5. Wrote a thin Knex **DAO** so the same code runs on SQLite (dev) and SQL Server (prod).
 
 ---
 
-## 4) Outcome & value — الناتج والقيمة
+## Workstream 2 — SAP Reference-Data Integration (Inbound)
 
-- **End-to-end flow working** (المراحل 1→4) on production SQL Server with live SAP reference data.
-- **Reliable integration pattern** (idempotent, retrying, fully audited via try-count + feedback).
-- **Zero manual re-keying** — items/recipes/cost-centers flow from SAP; approved orders flow back to SAP.
-- **Self-service + governance** — employees self-serve; the kitchen controls the recorded order and budget.
+Keeps the app's menu/recipes/departments identical to SAP.
 
-## 5) Next — المتبقّي
-- Plug live SAP API credentials + confirm document type/fields → switch off dry-run.
-- (Optional) Recipe explosion to ingredients on push; cost-center monthly budgets; post-delivery rating.
+**Steps delivered**
+1. Read-only connection to the `EFB_DB` SAP mirror (`sapSource.js`).
+2. Scheduled sync job (`sync.js`) running **every 10 minutes**.
+3. **Create/update by code**: for each record, look up the code → `UPDATE` if it exists, `INSERT` if new (items, prices, recipes, cost-centers).
+4. Set each item's default price from the configured price list.
+5. **Verified live:** 1,247 items · 12,469 prices · 273 recipes · 245 cost-centers.
 
 ---
 
-<sub>Generated as a worklog for Teamflect tasks/goals & performance review · EFB Meals.</sub>
+## Workstream 3 — Authentication (Microsoft SSO)
+
+**Steps delivered**
+1. Mandatory **Microsoft sign-in** (MSAL) — no anonymous access.
+2. Identity auto-read from Active Directory via Graph (name, email, department, phone).
+3. Backend validates the Microsoft ID token (JWKS) on every API call.
+4. **Demo fallback** for environments without Azure (email-only sign-in).
+5. Token auto-refresh interceptor so sessions never silently fail.
+
+---
+
+## Workstream 4 — Backend / REST API
+
+Express API on **port 4000** (separate from the Fleet app).
+
+**Endpoints**
+- `GET /api/items?classification=` · `GET /api/cost-centers` — menu & departments from the synced tables.
+- `POST /api/request` — create a request with the requester's suggested items.
+- `GET /api/kitchen/requests` · `POST /api/kitchen/set-budget/:id` — kitchen records final items + budget.
+- `POST /api/kitchen/approve/:id` · `/reject/:id` · `/reject-order/:id` · `/note/:id`.
+- `POST /api/budget/upload/:id` — requester uploads the PDF · `GET /api/budget/action` — approve/reject from email.
+- `GET /api/sap/orders` · `POST /api/sap/sync` — SAP staging + manual sync trigger.
+
+**Steps delivered:** clean DAO-backed routes; file upload (Multer); signed action tokens (72h) for email links; status state-machine (`requested → budget_set → budget_uploaded → ready_for_sap`, plus reject paths).
+
+---
+
+## Workstream 5 — Email Automation
+
+Branded, bilingual emails sent from `efb.apps@efb.eg` via Microsoft Graph (SMTP fallback; simulate-and-log if unconfigured). **Test mode** reroutes every email to one tester.
+
+**Automated emails (one per flow event):**
+1. `newRequestTemplate` → kitchen, on a new request (suggested items + details).
+2. `requestConfirmationTemplate` → requester, confirms receipt.
+3. `budgetSetTemplate` → requester, the kitchen's final items + budget + "upload PDF" CTA.
+4. `budgetUploadedTemplate` → kitchen, the PDF + **approve/reject** action buttons.
+5. `budgetApprovedTemplate` → requester, final items + budget ("order confirmed").
+6. `budgetRejectedTemplate` / `orderRejectedTemplate` / `kitchenNoteTemplate` → reasons & notes.
+
+**Steps delivered:** Graph token + `sendMail` with attachments; shared branded layout (logo, EFB palette, item tables); signed in-email approve/reject links; test-mode redirect.
+
+---
+
+## Workstream 6 — Website / Frontend
+
+React + Vite on **port 5173**, premium animated UI (aurora background, cinematic login, smooth-scroll), full AR/EN with RTL/LTR.
+
+**Screens & steps**
+1. **Login gate** + boot splash; Microsoft sign-in.
+2. **Request form** — order details (type, classification, **searchable department**, location, people) + suggested items (searchable menu popup) + 3-field special request.
+3. **My Requests** — status timeline, budget upload, reorder, suggestion-vs-final items side by side.
+4. **Kitchen dashboard** — KPI cards, filter chips, sort; modal to record final items + budget.
+5. **Reports** — searchable/filterable table, total budget, attachment download, CSV export.
+
+---
+
+## Workstream 7 — SAP Outbound Integration (Middleware)
+
+The integration step that sends approved orders to SAP.
+
+**Pattern (`sapOut.js` + `sapClient.js`):**
+1. **GET** approved requests where `sap_document_number = 0` (with items + budget).
+2. **MAP** each to a SAP document (lines = kitchen's recorded items, quantities, budget, `costcenter1..5`, PDF).
+3. **PUSH** via the SAP API (Service Layer, **user/password** auth, auto re-login); off-menu special items are **create/update by code** on SAP first.
+4. **UPDATE by request id** — document number on success, feedback always, `number_of_try += 1` each attempt; failures stay at `doc = 0` and retry next sweep.
+
+**Steps delivered:** config-driven client; `SAP_DRY_RUN` simulation mode; **verified end-to-end** in dry-run (pending → mapped → doc number written, try counted, no duplicates). **Pending:** live SAP URL/user/password/company-DB/document-type from IT.
+
+---
+
+## Workstream 8 — UI Revisions & Fixes (iterative)
+
+1. Removed clutter; compact, calmer palette; uniform button sizes.
+2. Fixed number-input scroll bug (typing 5000 then scrolling became 4999.98).
+3. Newest-first ordering across Kitchen & My Requests.
+4. Two-column item layout (suggestion vs final) on both Kitchen and My Requests.
+5. Scrollable modals; consistent dropdown carets; searchable department selector.
+
+---
+
+## Workstream 9 — DevOps & Docs
+
+1. Git repository with **continuous pushes** after each piece.
+2. `.env` / `.env.example` for all config (DB, Azure, mail, sync, SAP).
+3. Diagnostic scripts: `check-db.js`, `test-graph.js`, `inspect-sap.js`.
+4. Fancy README with architecture & flow diagrams; this worklog.
+
+---
+
+## Status summary
+| Workstream | Status |
+|---|---|
+| 1 Database & schema | ✅ Done |
+| 2 Inbound SAP sync | ✅ Done (live-verified) |
+| 3 Microsoft SSO | ✅ Done |
+| 4 Backend API | ✅ Done |
+| 5 Email automation | ✅ Done |
+| 6 Frontend | ✅ Done |
+| 7 SAP outbound middleware | ✅ Built & dry-run verified · ⏳ needs live credentials |
+| 8 UI revisions | ✅ Done (ongoing polish) |
+| 9 DevOps & docs | ✅ Done |
+
+---
+
+<sub>End-to-end worklog for Teamflect tasks/goals & performance review · EFB Meals.</sub>
