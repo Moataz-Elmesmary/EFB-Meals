@@ -20,31 +20,33 @@ const INTERVAL_MIN = parseInt(process.env.SAP_OUT_INTERVAL_MIN || '5', 10);
 let running = false;
 
 // Map one request (header + items + budget) into the SAP document model.
-// Kept in one place so the field mapping is easy to adjust to the real doc type.
+// Shaped like a SAP B1 A/R Reserve Invoice (Service Layer). The 5 cost
+// dimensions (CostingCode..CostingCode5) carry our costcenter1..5 — e.g.
+// "Channels of Donations" is one of those dimensions in SAP.
 function mapToSapDoc(req) {
   const recorded = (req.items || []).filter((i) => i.kind === RECORDED_KIND);
+  const cc = (n) => req[`costcenter${n}`] || null;
   return {
-    // our tracking key (UDF on the SAP side)
-    RequestId: req.id,
-    U_RequestId: req.id,
-    DocDate: req.needed_date || undefined,
+    CardCode: process.env.SAP_CARD_CODE || 'C0007', // the meals BP/customer
+    DocDueDate: req.needed_date || undefined,
     Comments: `EFB Meals #${req.id} · ${req.requester_name || ''} · ${req.department || ''}`.trim(),
-    // cost-center allocation (header)
-    CostCenter1: req.costcenter1 || req.department_code || null,
-    CostCenter2: req.costcenter2 || null,
-    CostCenter3: req.costcenter3 || null,
-    CostCenter4: req.costcenter4 || null,
-    CostCenter5: req.costcenter5 || null,
-    Budget: req.budget ? { amount: req.budget.amount, currency: req.budget.currency } : null,
-    BudgetFileName: req.budget && req.budget.attachment_name,
-    BudgetFileBase64: req.budget && req.budget.attachment_data,
-    // lines = the kitchen's recorded items
+    U_RequestId: req.id, // UDF link back to our request
     DocumentLines: recorded.map((it) => ({
       ItemCode: it.item_code || null,
       ItemDescription: it.meal_name,
       Quantity: it.quantity,
-      special: !it.item_code
-    }))
+      WarehouseCode: process.env.SAP_WAREHOUSE || '01',
+      CostingCode: cc(1) || req.department_code || null, // dimension 1
+      CostingCode2: cc(2),
+      CostingCode3: cc(3),
+      CostingCode4: cc(4),
+      CostingCode5: cc(5)
+    })),
+    // budget metadata (kept as UDFs / for the attachment on the SAP side)
+    U_BudgetAmount: req.budget ? req.budget.amount : null,
+    U_BudgetCurrency: req.budget ? req.budget.currency : null,
+    BudgetFileName: req.budget && req.budget.attachment_name,
+    BudgetFileBase64: req.budget && req.budget.attachment_data
   };
 }
 
