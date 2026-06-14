@@ -8,7 +8,7 @@
 //   rejected         → kitchen rejected the order (terminal)
 const dao = require('./db');
 const email = require('./email');
-const { pushRequestToSAP } = require('./sapService');
+const sapOut = require('./integration/sapOut');
 const T = require('./templates/emailTemplates');
 
 // Step 2 — the kitchen reviews the order, enters the FINAL (requested) items +
@@ -67,14 +67,16 @@ async function approve(id) {
   if (!req) throw new Error('Request not found');
   const budget = await dao.latestBudgetFor(id);
   if (!budget || !budget.attachment_data) throw new Error('No budget document uploaded yet.');
-  const sap = await pushRequestToSAP(id);
+  // Mark ready; the SAP middleware (sapOut) picks it up — push immediately too so
+  // it doesn't wait for the next sweep. document_number stays 0 until SAP confirms.
   await dao.updateRequest(id, { status: 'ready_for_sap' });
+  sapOut.runOnce().catch((e) => console.error('SAP push trigger failed:', e.message));
   if (req.requester_email) {
     email
       .sendNotification(req.requester_email, `🎉 Order confirmed #${id} — طلبك اكتمل`, T.budgetApprovedTemplate(req, budget))
       .catch(() => {});
   }
-  return { status: 'ready_for_sap', ...sap };
+  return { status: 'ready_for_sap' };
 }
 
 // Step 4 (alt) — kitchen rejects the uploaded document → employee re-uploads.

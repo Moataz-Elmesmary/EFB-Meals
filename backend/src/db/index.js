@@ -171,6 +171,30 @@ async function createSalesOrder(data) {
 const updateSalesOrder = (id, fields) => db('sap_sales_orders').where({ id }).update(fields);
 const listSalesOrders = () => db('sap_sales_orders').orderBy('created_at', 'desc');
 
+// ── SAP outbound middleware ────────────────────────────
+// GET: approved requests that haven't reached SAP yet (sap_document_number = 0),
+// each with its items + latest budget so the mapper has everything it needs.
+async function pendingForSap() {
+  const rows = await db('main_requests')
+    .where({ status: 'ready_for_sap' })
+    .andWhere((q) => q.where('sap_document_number', 0).orWhereNull('sap_document_number'))
+    .orderBy('id', 'asc');
+  const withI = await withItems(rows);
+  for (const r of withI) r.budget = await latestBudgetFor(r.id);
+  return withI;
+}
+
+// UPDATE (by request id): write back the SAP result. number_of_try += 1 on every
+// attempt; document_number is only set on success.
+async function recordSapResult(id, { documentNumber, feedback }) {
+  const row = await db('main_requests').where({ id }).first('sap_number_of_try');
+  const tries = ((row && row.sap_number_of_try) || 0) + 1;
+  const fields = { sap_integration_feedback: String(feedback || '').slice(0, 1000), sap_number_of_try: tries };
+  if (documentNumber != null && documentNumber !== '') fields.sap_document_number = documentNumber;
+  await db('main_requests').where({ id }).update(fields);
+  return tries;
+}
+
 module.exports = {
   db,
   init,
@@ -195,5 +219,7 @@ module.exports = {
   updateBudget,
   createSalesOrder,
   updateSalesOrder,
-  listSalesOrders
+  listSalesOrders,
+  pendingForSap,
+  recordSapResult
 };
